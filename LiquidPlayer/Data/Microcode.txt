@@ -1,0 +1,1495 @@
+﻿; Microcode.txt
+; Version 0.01
+; 2016-03-24 
+
+;
+; Format:
+;	- pCode
+;	- short description
+;	- long description
+;	- size
+;	- registers affected
+;
+
+0
+halt
+Stop the VM
+1
+
+
+1
+info                LP={0} LN={1} FN={2}
+Record the position, line #, and file #
+4
+
+
+255
+debugInfo           
+Record the position, line #, and file #
+6
+
+
+2
+irq
+Interrupt request
+1
+
+
+3
+buffer              A0
+Allocate a temporary holding spot for the integer in the A0 register
+1
+BX
+
+4
+bufferFloat         D0
+Allocate a temporary holding spot for the float in the D0 register
+1
+BX
+
+5
+unbuffer
+Free a temporary holding spot
+1
+BX
+
+6
+alloc               {0}
+Allocate memory on the stack
+2
+SP
+
+7
+decr                SP, {0}
+Decrement the stack pointer
+2
+SP
+
+8
+pack                BX
+Pack the BX register into the A0 register
+1
+A0
+
+9
+unpack              BX
+Unpack the A0 register into the BX register
+1
+BX
+
+10
+unused
+Unused
+1
+
+
+11
+point               Global {0}
+Point to a global object
+2
+BX
+
+12
+point               Macro + {0}
+Point to an object at the macro level
+2
+BX
+
+13
+point               BP + {0}
+Point to an object on the stack using BP as an index
+2
+BX
+
+14
+point               SP + {0}
+Point to an object on the stack using SP as an index
+2
+BX
+
+15
+point               Micro + {0}
+Point to an object at the micro level
+2
+BX
+
+16
+point               BX
+Indirect point the BX register
+1
+BX
+
+17
+bFree
+Free the pointer in the A0 register
+1
+
+
+18
+bFree				A1
+Free the pointer in the A1 register
+1
+
+
+19
+iterator
+Call a class's Iterator method
+1
+BX
+
+20
+this
+Loads id into the A0 register
+1
+A0
+
+21
+task
+Loads task id into the A0 register
+1
+A0
+
+22
+new                 alias {0}
+Spawn a new object
+2
+A0
+
+23
+hook
+Hook an object to id
+1
+
+
+24
+copy
+Copy the object in the A0 register
+1
+
+
+25
+adopt
+Adopt the object in the A0 register
+1
+
+
+26
+assign
+Assign the object in the A0 register to pointer BX
+1
+A0
+
+27
+free
+Free the object in the A0 register
+1
+A0
+
+28
+free                A1
+Free the object in the A1 register
+1
+
+
+29
+freeOnError
+Free the object in the A0 register if there was an error
+1
+A0
+
+30
+class               A0, alias {0}
+Load a class into the A0 register
+2
+A0
+
+31
+const               A0, {0}
+Load an integer constant into the A0 register
+2
+A0
+
+32
+const               A1, {0}
+Load an integer constant into the A1 register
+2
+
+
+33
+load                A0
+Load an integer into the A0 register
+1
+A0
+
+34
+load                A1
+Load an integer into the A1 register
+1
+
+
+35
+boolean
+Convert the integer in the A0 register to a boolean
+1
+A0
+
+36
+store               A0
+Store the A0 register
+1
+
+
+37
+store               A1
+Store the A1 register
+1
+
+
+38
+move                A0, A1
+Move the A1 register to the A0 register
+1
+A0
+
+39
+move                A1, A0
+Move the A0 register to the A1 register
+1
+
+
+40
+push                A0
+Push the A0 register onto the stack
+1
+SP
+
+41
+push                A1
+Push the A1 register onto the stack
+1
+SP
+
+42
+pop                 A0
+Pop an integer off the stack and into the A0 register
+1
+A0,SP
+
+43
+pop                 A1
+Pop an integer off the stack and into the A1 register
+1
+SP
+
+44
+move                A0, D0
+Move the D0 register to the A0 register
+1
+A0
+
+45
+move                A1, D1
+Move the D1 register to the A1 register
+1
+
+
+46
+notused
+Not used
+1
+
+
+47
+neg                 A0
+Negate the A0 register
+1
+A0
+
+48
+neg                 A1
+Negate the A1 register
+1
+
+
+49
+not                 A0
+Binary NOT the A0 register
+1
+A0
+
+50
+not                 A1
+Binary NOT the A1 register
+1
+
+
+51
+inc                 A0
+Increment the A0 register
+1
+A0
+
+52
+inc                 A1
+Increment the A1 register
+1
+
+
+53
+dec                 A0
+Decrement the A0 register
+1
+A0
+
+54
+dec                 A1
+Decrement the A1 register
+1
+
+
+55
+abs
+ABS function
+1
+A0
+
+56
+sgn
+SGN function
+1
+A0
+
+57
+add
+Add the A0 register and A1 register together
+1
+A0
+
+58
+sub
+Subtract the A1 register from the A0 register
+1
+A0
+
+59
+mod
+Give the remainder when the A0 register is divided by the A1 register
+1
+A0
+
+60
+mult
+Multiply the A0 register by the A1 register
+1
+A0
+
+61
+div
+Divide the A0 register by the A1 register
+1
+A0
+
+62
+power
+Raise the A0 register to the A1 register's power
+1
+A0
+
+63
+shl
+Shift the A0 register left by A1 bits
+1
+A0
+
+64
+shr
+Shift the A0 register right by A1 bits
+1
+A0
+
+65
+shlConst            {0}
+Shift the A0 register left by x bits
+2
+A0
+ 
+66
+shrConst            {0}
+Shift the A0 register right by x bits
+2
+A0
+
+67
+equal
+=
+1
+A0
+
+68
+notEqual
+!=
+1
+A0
+
+69
+less
+<
+1
+A0
+
+70
+lessEqual
+<=
+1
+A0
+
+71
+greater
+>
+1
+A0
+
+72
+greaterEqual
+>=
+1
+A0
+
+73
+binaryAnd
+Binary AND
+1
+A0
+
+74
+binaryOr
+Binary OR
+1
+A0
+
+75
+binaryXor
+Binary XOR
+1
+A0
+
+76
+logicalNot
+Logical NOT
+1
+A0
+
+77
+logicalAnd
+Logical AND
+1
+A0
+
+78
+logicalOr
+Logical OR
+1
+A0
+
+79
+logicalXor
+Logical XOR
+1
+A0
+
+80
+dConstFloat         D0, {f}
+Load a float constant into the D0 register
+2
+D0
+
+81
+dConstFloat         D1, {f}
+Load a float constant into the D1 register
+2
+
+
+82
+dLoadFloat          D0
+Load a float into the D0 register
+1
+D0
+
+83
+dLoadInt            D0
+Load an integer into the D0 register
+1
+D0
+
+84
+dLoadFloat          D1
+Load a float into the D1 register
+1
+
+
+85
+dLoadInt            D1
+Load an integer into the D1 register
+1
+
+
+86
+dStoreFloat         D0
+Store the D0 register as a float
+1
+
+
+87
+dStoreFloat         D1
+Store the D1 register as a float
+1
+
+
+88
+move                D0, D1
+Move the D1 register to the D0 register
+1
+D0
+
+89
+move                D1, D0
+Move the D0 register to the D1 register
+1
+
+
+90
+dPushFloat          D0
+Push the D0 register onto the stack
+1
+SP
+
+91
+dPushFloat          D1
+Push the D1 register onto the stack
+1
+SP
+
+92
+dPopFloat           D0
+Pop a float off the stack and into the D0 register
+1
+D0,SP
+
+93
+dPopFloat           D1
+Pop a float off the stack and into the D1 register
+1
+SP
+
+94
+move                D0, A0
+Move the A0 register to the D0 register
+1
+D0
+
+95
+move                D1, A1
+Move the A1 register to the D1 register
+1
+
+
+96
+dNeg                D0
+Negate the D0 register
+1
+D0
+
+97
+dNeg                D1
+Negate the D1 register
+1
+
+
+98
+dInc                D0
+Increment the D0 register
+1
+D0
+
+99
+dInc                D1
+Increment the D1 register
+1
+
+
+100
+dDec                D0
+Decrement the D0 register
+1
+D0
+
+101
+dDec                D1
+Decrement the D1 register
+1
+
+
+102
+dInt
+INT function
+1
+D0
+
+103
+dAbs
+ABS function
+1
+D0
+
+104
+dSgn
+SGN function
+1
+D0
+
+105
+dVal
+VAL function
+1
+D0
+
+106
+dFrac
+FRAC function
+1
+D0
+
+107
+dCeil
+CEIL function
+1
+D0
+
+108
+dFix
+FIX function
+1
+D0
+
+109
+dRound
+ROUND function
+1
+D0
+
+110
+dTan
+TAN function
+1
+D0
+
+111
+dAtn
+ATN function
+1
+D0
+
+112
+dCos
+COS function
+1
+D0
+
+113
+dSin
+SIN function
+1
+D0
+
+114
+dExp
+EXP function
+1
+D0
+
+115
+dExp2
+EXP2 function
+1
+D0
+
+116
+dExp10
+EXP10 function
+1
+D0
+
+117
+dLog
+LOG function
+1
+D0
+
+118
+dLog2
+LOG2 function
+1
+D0
+
+119
+dLog10
+LOG10 function
+1
+D0
+
+120
+dSqr
+SQR function
+1
+D0
+
+121
+dAdd
+Add the D0 and D1 registers together
+1
+D0
+
+122
+dSub
+Subtract the D1 register from the D0 register
+1
+D0
+
+123
+dMod
+Give the remainder when the D0 register is divided by the D1 register
+1
+D0
+
+124
+dMult
+Multiply the D0 register by the D1 register
+1
+D0
+
+125
+dDiv
+Divide the D0 register by the D1 register
+1
+D0
+
+126
+dPower
+Raise the D0 register to the D1 register's power
+1
+D0
+
+127
+dEqual
+=
+1
+A0
+
+128
+dNotEqual
+!=
+1
+A0
+
+129
+dLess
+<
+1
+A0
+
+130
+dLessEqual
+<=
+1
+A0
+
+131
+dGreater
+>
+1
+A0
+
+132
+dGreaterEqual
+>=
+1
+A0
+
+133
+wConst              A0, "{s}"
+Create a string using a string literal
+2
+A0
+
+134
+wConst              A1, "{s}"
+Create a string using a string literal
+2
+
+
+135
+wClone              A0
+Clone the string in the A0 register
+1
+A0
+
+136
+wClone              A1
+Clone the string in the A1 register
+1
+
+
+137
+wJoin
+Join the string in the A1 register to the string in the A0 register
+1
+
+
+138
+wStr                A0
+Convert the integer in the A0 register into a string
+1
+A0
+
+139
+wStrFloat           D0
+Convert the float in the D0 register into a string
+1
+A0
+
+140
+wHook
+Hook a string to id
+1
+
+
+141
+wAssign
+Assign the string in the A0 register to pointer BX
+1
+A0
+
+142
+wFree
+Free the string in the A0 register
+1
+A0
+
+143
+wFree               A1
+Free the string in the A1 register
+1
+
+
+144
+wEqual
+=
+1
+A0
+
+145
+wNotEqual
+!=
+1
+A0
+
+146
+wLess
+<
+1
+A0
+
+147
+wGreater
+>
+1
+A0
+
+148
+jump                {0}
+Perform a relative jump
+2
+
+
+149
+jumpFalse           {0}
+Perform a relative jump if the A0 register is false
+2
+
+
+150
+jumpTrue            {0}
+Perform a relative jump if the A0 register is true
+2
+
+
+151
+jumpIteratorEnd     {0}
+Perform a relative jump if an iterator ended
+2
+A0,BX,C0,D0,SP
+
+152
+gosub               {0}
+Perform a relative jump to a subroutine
+2
+A0,BX,C0,D0,SP
+
+153
+return
+Return from a subroutine
+1
+SP
+
+154
+native              alias {0}
+Call a native method
+2
+A0,C0,D0,SP
+
+155
+call                {0}
+Call a function
+2
+BX,SP
+
+156
+vTable              alias {0}
+Invoke a virtual method
+2
+A0,BX,C0,D0,SP
+
+157
+nativeClass         alias {0}: alias {1}
+Call a class's native method
+3
+A0,C0,D0,SP
+
+158
+waitClass           alias {0}: alias {1}
+Call a class's wait method
+3
+A0,C0,D0,SP
+
+159
+callClass           alias {0}: {1}
+Call a class's function
+3
+BX,SP
+
+160
+vTableClass         alias {0}: alias {1}
+Invoke a class's virtual method
+3
+A0,BX,C0,D0,SP
+
+161
+api                 alias {0}
+Call an API function
+2
+A0,C0,D0,SP
+
+162
+endFunc
+End a function
+1
+SP
+
+163
+throw
+Throw an exception
+1
+A0
+
+164
+byte
+Convert the integer in the A0 register to a byte
+1
+A0
+
+165
+byte                A1
+Convert the integer in the A1 register to a byte
+1
+
+
+166
+short
+Convert the integer in the A0 register to a short integer
+1
+A0
+
+167
+short               A1
+Convert the integer in the A1 register to a short integer
+1
+
+
+168
+buffer              C0
+Allocate a temporary holding spot for the long in the C0 register
+1
+BX
+
+169
+move                A0, C0
+Move the C0 register to the A0 register
+1
+A0
+
+170
+move                A1, C1
+Move the C1 register to the A1 register
+1
+
+
+171
+move                C0, A0
+Move the A0 register to the C0 register
+1
+C0
+
+172
+move                C1, A1
+Move the A1 register to the C1 register
+1
+
+
+173
+move                D0, C0
+Move the C0 register to the D0 register
+1
+D0
+
+174
+move                D1, C1
+Move the C1 register to the D1 register
+1
+
+
+175
+move                C0, D0
+Move the D0 register to the C0 register
+1
+C0
+
+176
+move                C1, D1
+Move the D1 register to the C1 register
+1
+
+
+177
+move                C0, C1
+Move the C1 register to the C0 register
+1
+C0
+
+178
+move                C1, C0
+Move the C0 register to the C1 register
+1
+
+
+179
+wstr                C0
+Convert the long in the C0 register to a string
+1
+A0,C0
+
+180
+qPack               A0
+Pack a long into the A0 register
+1
+A0
+
+181
+qUnpack             A0
+Unpack the A0 register into a long
+1
+A0,C0
+
+182
+qConst              C0, {L}
+Load a long constant into the C0 register
+3
+C0
+
+183
+qConst              C1, {L}
+Load a long constant into the C1 register
+3
+
+
+184
+qLoad               C0
+Load a long into the C0 register
+1
+C0
+
+185
+qLoadInt            C0
+Load an integer into the C0 register
+1
+C0
+
+186
+qLoad               C1
+Load a long into the C1 register
+1
+
+
+187
+qLoadInt            C1
+Load an integer into the C1 register
+1
+
+
+188
+qPush               C0
+Push the C0 register onto the stack
+1
+SP
+
+189
+qPush               C1
+Push the C1 register onto the stack
+1
+SP
+
+190
+qPop                C0
+Pop a long off the stack and into the C0 register
+1
+C0,SP
+
+191
+qPop                C1
+Pop a long off the stack and into the C1 register
+1
+SP
+
+192
+qNeg                C0
+Negate the C0 register
+1
+C0
+
+193
+qNeg                C1
+Negate the C1 register
+1
+C0
+
+194
+qNot                C0
+Binary NOT the C0 register
+1
+C0
+
+195
+qNot                C1
+Binary NOT the C1 register
+1
+
+
+196
+qInc                C0
+Increment the C0 register
+1
+C0
+
+197
+qInc                C1
+Increment the C1 register
+1
+
+
+198
+qDec                C0
+Decrement the C0 register
+1
+C0
+
+199
+qDec                C1
+Decrement the C1 register
+1
+
+
+200
+qAbs                C0
+ABS function
+1
+C0
+
+201
+qSgn                C0
+SGN function
+1
+C0
+
+202
+qAdd
+Add the C0 register and C1 register together
+1
+C0
+
+203
+qSub
+Subtract the C1 register from the C0 register
+1
+C0
+
+204
+qMod
+Give the remainder when the C0 register is divided by the C1 register
+1
+C0
+
+205
+qMult
+Multiply the C0 register by the C1 register
+1
+C0
+
+206
+qDiv
+Divide the C0 register by the C1 register
+1
+C0
+
+207
+qPower
+Raise the C0 register to the C1 register's power
+1
+C0
+
+208
+qShl
+Shift the C0 register left by C1 bits
+1
+C0
+
+209
+qShr
+Shift the C0 register right by C1 bits
+1
+C0
+
+210
+qShlConst           {0}
+Shift the C0 register left by x bits
+2
+C0
+
+211
+qShrConst           {0}
+Shift the C0 register right by x bits
+2
+C0
+
+212
+qEqual
+=
+1
+A0
+
+213
+qNotEqual
+!=
+1
+A0
+
+214
+qLess
+<
+1
+A0
+
+215
+qLessEqual
+<=
+1
+A0
+
+216
+qGreater
+>
+1
+A0
+
+217
+qGreaterEqual
+>=
+1
+A0
+
+218
+qAnd
+Binary AND
+1
+C0
+
+219
+qOr
+Binary OR
+1
+C0
+
+220
+qXor
+Binary XOR
+1
+C0
+
+221
+qAssign
+Assign the long in the C0 register to pointer BX
+1
+
+
+222
+qFree
+Free the long in the A0 register
+1
+A0
+
+223
+qFree               A1
+Free the long in the A1 register
+1
+
+
+224
+qBoolean
+Convert the long in the C0 register to a boolean
+1
+C0
+
+225
+qByte
+Convert the long in the C0 register to a byte
+1
+C0
+
+226
+qShort
+Convert the long in the C0 register to a short
+1
+C0
+
+227
+qInt
+Convert the long in the C0 register to an integer
+1
+C0
+
+228
+buffer              D0
+Create a temporary holding spot for the D0 register
+1
+BX
+
+229
+wstr                D0
+Convert the double in the D0 register to a string
+1
+A0
+
+230
+dPack               A0
+Pack a double into the A0 register
+1
+A0
+
+231
+dUnpack             A0
+Unpack the A0 register into a double
+1
+A0,D0
+
+232
+dConst              D0, {d}
+Load a double constant into the D0 register
+3
+D0
+
+233
+dConst              D1, {d}
+Load a double constant into the D1 register
+3
+
+
+234
+dLoad               D0
+Load a double into the D0 register
+1
+D0
+
+235
+dLoadInt64          D0
+Load a long into the D0 register
+1
+D0
+
+236
+dLoad               D1
+Load a double into the D1 register
+1
+
+
+237
+dLoadInt64          D1
+Load a long into the D1 register
+1
+
+
+238
+dPush               D0
+Push the D0 register onto the stack
+1
+SP
+
+239
+dPush               D1
+Push the D1 register onto the stack
+1
+SP
+
+240
+dPop                D0
+Pop a double off the stack and into the D0 register
+1
+D0,SP
+
+241
+dPop                D1
+Pop a double off the stack and into the D1 register
+1
+SP
+
+242
+dAssign
+Assign the double in the D0 register to pointer BX
+1
+
+
+243
+dFree
+Free the double in the A0 register
+1
+A0
+
+244
+dFree               A1
+Free the double in the A1 register
+1
+
+
+245
+xChg
+Exchange the top two values on the stack
+1
+SP
+

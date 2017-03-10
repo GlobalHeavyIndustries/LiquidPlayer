@@ -33,8 +33,13 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="OpenTK, Version=2.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
+      <HintPath>packages\OpenTK.2.0.0\lib\net20\OpenTK.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Speech" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -46,14 +51,85 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\Core.cs" />
+    <Compile Include="Common\DSL.cs" />
+    <Compile Include="Common\Enums.cs" />
+    <Compile Include="Enums.cs" />
+    <Compile Include="Exec\Exec.cs" />
+    <Compile Include="Exec\ObjectManager.cs" />
+    <Compile Include="Exec\Router.cs" />
+    <Compile Include="Exec\Sweeper.cs" />
+    <Compile Include="Exec\VirtualMachine.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
-    <Compile Include="Program.cs" />
+    <Compile Include="Kernal\API.cs" />
+    <Compile Include="Kernal\ClassManager.cs" />
+    <Compile Include="Kernal\StandardLibrary.cs" />
+    <Compile Include="Liquid\App.cs" />
+    <Compile Include="Liquid\Applet.cs" />
+    <Compile Include="Liquid\Array.cs" />
+    <Compile Include="Liquid\Audio.cs" />
+    <Compile Include="Liquid\Banner.cs" />
+    <Compile Include="Liquid\Bitmap.cs" />
+    <Compile Include="Liquid\Brush.cs" />
+    <Compile Include="Liquid\Canvas.cs" />
+    <Compile Include="Liquid\CharacterSet.cs" />
+    <Compile Include="Liquid\Collection.cs" />
+    <Compile Include="Liquid\CommandLine.cs" />
+    <Compile Include="Liquid\Console.cs" />
+    <Compile Include="Liquid\CopperBars.cs" />
+    <Compile Include="Liquid\DataStream.cs" />
+    <Compile Include="Liquid\Dictionary.cs" />
+    <Compile Include="Liquid\Entity.cs" />
+    <Compile Include="Liquid\Exception.cs" />
+    <Compile Include="Liquid\FBO.cs" />
+    <Compile Include="Liquid\FBO3D.cs" />
+    <Compile Include="Liquid\File.cs" />
+    <Compile Include="Liquid\FileStream.cs" />
+    <Compile Include="Liquid\FileSystem.cs" />
+    <Compile Include="Liquid\Filter.cs" />
+    <Compile Include="Liquid\Font.cs" />
+    <Compile Include="Liquid\GEL.cs" />
+    <Compile Include="Liquid\GEL3D.cs" />
+    <Compile Include="Liquid\Image.cs" />
+    <Compile Include="Liquid\Layer.cs" />
+    <Compile Include="Liquid\List.cs" />
+    <Compile Include="Liquid\Matrix.cs" />
+    <Compile Include="Liquid\Message.cs" />
+    <Compile Include="Liquid\MonoSpacedFont.cs" />
+    <Compile Include="Liquid\Music.cs" />
+    <Compile Include="Liquid\Object.cs" />
+    <Compile Include="Liquid\Ortho.cs" />
+    <Compile Include="Liquid\Pen.cs" />
+    <Compile Include="Liquid\Perspective.cs" />
+    <Compile Include="Liquid\Pipe.cs" />
+    <Compile Include="Liquid\Program.cs" />
+    <Compile Include="Liquid\Queue.cs" />
+    <Compile Include="Liquid\Sound.cs" />
+    <Compile Include="Liquid\Sprite.cs" />
+    <Compile Include="Liquid\Stack.cs" />
+    <Compile Include="Liquid\Stream.cs" />
+    <Compile Include="Liquid\Task.cs" />
+    <Compile Include="Liquid\Text.cs" />
+    <Compile Include="Liquid\TextReader.cs" />
+    <Compile Include="Liquid\Texture.cs" />
+    <Compile Include="Liquid\TextWriter.cs" />
+    <Compile Include="Liquid\TileMap.cs" />
+    <Compile Include="Liquid\Turtle.cs" />
+    <Compile Include="Liquid\View.cs" />
+    <Compile Include="Liquid\Voice.cs" />
+    <Compile Include="Main.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Sprockets\Audio.cs" />
+    <Compile Include="Sprockets\Color.cs" />
+    <Compile Include="Sprockets\Graphics.cs" />
+    <Compile Include="Sprockets\Input.cs" />
+    <Compile Include="Sprockets\Math.cs" />
+    <Compile Include="Util.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -63,6 +139,8 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <None Include="OpenTK.dll.config" />
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -75,6 +153,34 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Data\Font.bmp">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Microcode.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\StandardLibrary.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\Turtle.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="player.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="WMPLib">
+      <Guid>{6BF52A50-394A-11D3-B153-00C04F79FAA6}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
