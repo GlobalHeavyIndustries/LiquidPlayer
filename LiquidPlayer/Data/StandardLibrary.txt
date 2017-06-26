@@ -10,6 +10,7 @@
 ; Format:
 ;	constant = value
 ;
+PI								= 3.1415926535897931
 CTRL_C							= 0x01
 CTRL_D							= 0x02
 CTRL_E							= 0x04
@@ -83,11 +84,6 @@ PIXELOPERATOR_MULT				= 11
 PIXELOPERATOR_ZERO				= 12
 PIXELOPERATOR_REPLACE			= 13
 PIXELOPERATOR_ALPHATEST			= 14
-FONT_REGULAR					= 0
-FONT_BOLD						= 1
-FONT_ITALIC						= 2
-FONT_UNDERLINE					= 3
-FONT_STRIKEOUT					= 4
 GL_POINTS						= 0
 GL_LINES						= 1
 GL_LINE_LOOP					= 2
@@ -134,28 +130,39 @@ Object
 -:Constructor()
 *boolean:Callback(Message)
 +int:Compare(Object,Object)
--:DelayMessage(Object,int,int,int)
+-:DelayMessage(Object,int,string,int)
 -:Disable()
 -:Enable()
 -Object:GetParent()
 -Task:GetParentTask()
 -int:GetTimeStamp()
--:PulseMessage(Object,int,int,int,int)
+-boolean:IsEnabled()
+-:PulseMessage(Object,int,string,int,int)
 ;:Raise(int,int)
--:SendMessage(Object,int,int)
-;:Trap(boolean) <-- move to Task
+-:SendMessage(Object,int,string)
 *:Shutdown()
+
+System > Object
++CharacterSet:GetCharacterSet()
++:Launch(string)
++:MessageBox(string,string)
++string:FileOpen(string,string,string)
++string:FileSaveAs(string,string,string)
+
+Debugger > Object
++:Alert(string)
++:Assert(boolean,string)
++:Breakpoint()
++:Watch(int,double)
++:Watch(int,Object)
 
 Message > Object
 ;:Constructor(Object,int,int)
 -:Dispatch()
 -int:GetBody()
--int:GetData()
+-string:GetData()
 -boolean:IsFrom(Object)
 -boolean:IsTo(Object)
-
-Exception > Object
--:Constructor()
 
 Collection > Object
 
@@ -187,21 +194,17 @@ Matrix > Collection
 -:Constructor(int,int)
 -subclass:Index(int,int)
 -:Clear()
-;:Dim(int,int)
 ;:Exchange(int,int,int,int)
-;:Fill(subclass)
+-:Fill(subclass)
 -int:GetHeight()
 -int:GetWidth()
-;:Identity()
+-:Identity()
 ;:Invert(Matrix)
-;Matrix:Operator+(Matrix,Matrix)
-;Matrix:Operator-(Matrix,Matrix)
-;Matrix:Operator*(Matrix,Matrix)
-;Matrix:Operator*(Matrix,double)
-;:ReDim(int,int)
-;:ReDimPreserve(int,int)
++Matrix:Operator+(Matrix,Matrix)
++Matrix:Operator-(Matrix,Matrix)
++Matrix:Operator*(Matrix,Matrix)
++Matrix:Operator*(Matrix,double)
 ;:Transpose(Matrix)
-;:UnDim()
 
 Dictionary > Collection
 -:Constructor()
@@ -316,13 +319,27 @@ Mouse > Object
 +int:GetYPosition()
 
 Ortho > Object
+-:AlphaTest(boolean)
 -:BezierCurve(int,int,int,int,int,int,int,int)
 -:Blend(boolean)
 -:BlendFunc(int,int)
+-:Circle(int,int,int)
 -:CircleFill(int,int,int)
+-:ClipRectangle(int,int,int,int,int,int)
+-:Ellipse(int,int,int,int)
+-:EllipseFill(int,int,int,int)
 -:Ink(int)
+-:Line(int,int,int,int)
+-:LineWidth(float)
+-:Node(int)
+-:Plot(int,int)
+-:PointSize(float)
+-:Print(CharacterSet,int,int,byte)
+-:Print(CharacterSet,int,int,string)
+-:Print(Font,int,int,string)
 -:Rectangle(int,int,int,int)
 -:RectangleFill(int,int,int,int)
+-:Rotate(double)
 -:Scale(double,double)
 -:Stamp(Bitmap,int,int)
 -:Translate(int,int)
@@ -330,24 +347,28 @@ Ortho > Object
 Perspective > Object
 -:AlphaTest(boolean)
 -:Begin(int)
--:BindTexture(Bitmap)
 -:Blend(boolean)
 -:BlendFunc(int,int)
--:DepthFunc(int,int)
+-:DepthFunc(int)
 -:DepthTest(boolean)
 -:End()
 -:Ink(int)
 -:LineWidth(float)
 -:LoadIdentity()
+-:Normal(double,double,double)
+-:PointSize(float)
 -:PopMatrix()
 -:PushMatrix()
 -:Rotate(double,double,double,double)
+-:Scale(double,double,double)
 -:TexCoord(double,double)
+-:TextureMap(Bitmap)
 -:Translate(double,double,double)
 -:Vertex(double,double,double)
 
 Entity > Object
 -:Constructor()
+-boolean:IsRunning()
 -:Start()
 -:Stop()
 *:Update()
@@ -356,15 +377,20 @@ GEL > Entity
 -:Constructor()
 -:Alpha(float)
 -:Center()
+-int:GetMouseOverNode()
+-int:GetNodeClicked()
 -int:GetPriority()
 -double:GetRotation()
 -int:GetXPosition()
 -double:GetXScale()
 -int:GetYPosition()
 -double:GetYScale()
+-boolean:GotFocus()
 -:Hide()
 -boolean:IsClicked()
--boolean:IsNodeClicked()
+-boolean:IsMouseOver()
+-boolean:IsMouseOverNode(int)
+-boolean:IsNodeClicked(int)
 -boolean:IsVisible()
 -:Move(int,int)
 -:MoveDirection(double,double)
@@ -374,6 +400,7 @@ GEL > Entity
 -:Rotate(double)
 -:Scale(double)
 -:Scale(double,double)
+-:SetFocus()
 -:Show()
 -:Tint(int)
 
@@ -390,12 +417,14 @@ GEL3D > Entity
 -double:GetZPosition()
 -double:GetZScale()
 -double:GetZRotation()
+-boolean:GotFocus()
 -:Hide()
 -boolean:IsVisible()
 -:Move(double,double,double)
 *:Render(Perspective)
 -:Rotate(double,double,double)
 -:Scale(double,double,double)
+-:SetFocus()
 -:Show()
 -:Tint(int)
 
@@ -403,17 +432,20 @@ Task > Object
 -:Constructor(string)
 -:Constructor(string,string)
 -:Await(Task)
+;Exception:CheckTrap()
 -:ClearSignals()
+;Exception:EmptyTrap()
 -:End(Task)
 -:ErrorOut(string)
-;int:ExitCode()
+-int:ExitCode()
 -CommandLine:GetCommandLine()
--string:GetError()
 -List<string>:GetTaskList(Task)
 -string:GetTaskName()
 -boolean:IsDone(Task)
 -boolean:IsSignal(int)
 -Pipe:PipeLine(Task,Task)
+-:RaiseError(string)
+-string:ReadErrorStream()
 -:Resume()
 -:Run()
 -:Sleep(int)
@@ -422,6 +454,7 @@ Task > Object
 -Pipe:StandardOutput()
 -:Tick()
 -:Tock()
+;:Trap(boolean)
 
 Program > Task
 -:AutoSnap(boolean)
@@ -436,24 +469,36 @@ Program > Task
 
 App > Task
 -:Be()
+-Message:DequeueMessage()
 -int:GetScreenHeight()
 -int:GetScreenWidth()
+-boolean:IsMessageQueueEmpty()
 -:Paper(int)
 -:Screen(int,int)
 
 Applet > Task
 
 Clock > Object
-+long:Atomic()
++long:GetAtomic()
 +string:GetDate()
++int:GetDay()
++int:GetHour()
++int:GetMinute()
++int:GetMonth()
++int:GetSecond()
 +string:GetTime()
-+int:System()
++int:GetSystem()
++int:GetYear()
 
 Math > Object
 +int:Clamp(int,int,int)
 +double:Clamp(double,double,double)
-+double:Degree(double)
-+double:Radian(double)
++double:Degrees(double)
++int:Max(int,int)
++double:Max(double,double)
++int:Min(int,int)
++double:Min(double,double)
++double:Radians(double)
 
 Random > Object
 +int:Range(int,int)
@@ -467,19 +512,27 @@ RegularExpression > Object
 
 Color > Object
 +int:Darken(int,float)
++byte:GetAlpha(int)
++byte:GetBlue(int)
++byte:GetGreen(int)
 +int:GetPlasma()
 +int:GetRandom()
 +int:GetRandom(byte)
++byte:GetRed(int)
 +int:Gradient(int,int,float)
 +int:Gray(byte)
++int:GrayScale(int)
 +int:Lighten(int,float)
 +int:RGB(byte,byte,byte)
 +int:RGBA(byte,byte,byte,byte)
++int:Sepia(int)
 
 Bitmap > Object
 -:Constructor(int,int)
 -:Clear()
 -:DoubleBuffer()
+-int:GetHeight()
+-int:GetWidth()
 -int:Peek(int)
 -:Poke(int,int)
 -:SingleBuffer()
@@ -491,14 +544,12 @@ Image > Bitmap
 
 Texture > Bitmap
 -:Constructor()
+-:CellMachine(int,int)
 -:Checkerboard(int,int,int,int)
 -:Particle(double)
+-:PerlinNoise(int,int,int,int,int,boolean)
 
-Banner > Bitmap
-;:Constructor(string,float,string)
--:Constructor(string,float,int,string)
-
-Brush > Object
+Raster > Object
 -:Constructor(Bitmap)
 -:Constructor(Canvas)
 -:BezierCurve(int,int,int,int,int,int,int,int)
@@ -529,12 +580,12 @@ Brush > Object
 -:TriangleFill(int,int,int,int,int,int)
 -:vLine(int,int,int)
 
-Pen > Brush
+Pen > Raster
 -:Constructor(Bitmap)
 -:Constructor(Canvas)
 -:PrintAt(int,int,string)
 
-Turtle > Brush
+Turtle > Raster
 -:Constructor(Bitmap)
 -:Constructor(Canvas)
 -double:GetHeading()
@@ -550,39 +601,45 @@ Turtle > Brush
 -:TurnLeft(double)
 -:TurnRight(double)
 
-Filter > Brush
+Brush > Object
+
+Filter
 -:Constructor(Bitmap)
 -:Constructor(Canvas)
 -:Dilate()
+-:GrayScale()
+-:Kaleidoscope(int)
+-:MakeTileable(int)
 -:Median()
 -:Noise(int,int)
 -:ReplaceAlpha(int,byte)
 -:ReplaceColor(int,int)
+-:Sepia()
 -:Sharpen()
 
-Font > Object
--int:GetWidth(byte)
--int:GetWidth(string)
--int:GetHeight()
-
-CharacterSet > Font
+CharacterSet > Object
 -:Constructor(Bitmap)
 -:Constructor(Bitmap,int,int)
 -:Constructor(Bitmap,int,int,int,int)
--:Clear(int)
--:CustomCharacter(int,int,string)
+-:Clear(byte)
+-:CustomCharacter(byte,int,string)
+-int:GetHeight()
+-int:GetWidth()
+-int:GetWidth(string)
+-boolean:IsAvailable(byte)
 -:MapAll()
--:MapCharacter(int,int)
--:MapCharacters(int,int,int)
+-:MapCharacter(byte,int)
+-:MapCharacters(byte,int,int)
 -:MapTheseCharacters(string,int)
--:Palette(int,int)
--:Roll(int,int)
--:Scroll(int,int)
+-:Palette(byte,int)
+-:Roll(byte,int)
+-:Scroll(byte,int)
 
-MonoSpacedFont > Font
-;:Constructor(string,float)
--:Constructor(string,float,int)
--Bitmap:GetBitmap()
+Font > Object
+-:Constructor(string,int)
+-int:GetHeight()
+-int:GetWidth(byte)
+-int:GetWidth(string)
 
 View > GEL
 
@@ -595,6 +652,8 @@ Console > View
 -:Clear()
 -int:GetCursorX()
 -int:GetCursorY()
+-int:GetHeight()
+-int:GetWidth()
 -:Highlight(int)
 -string:InputLine()
 -double:InputNumber()
@@ -613,12 +672,14 @@ Console > View
 -:Underline(boolean)
 
 TileMap > View
--:Constructor()
 -:Constructor(CharacterSet)
--:Constructor(int,int)
--:Constructor(int,int,CharacterSet)
+-:Constructor(CharacterSet,int,int)
 -:AutoScroll(boolean)
 -:Clear()
+-int:GetCursorX()
+-int:GetCursorY()
+-int:GetHeight()
+-int:GetWidth()
 -:Highlight(int)
 -string:InputLine()
 -double:InputNumber()
@@ -636,6 +697,11 @@ TileMap > View
 -:Tab(int)
 
 CopperBars > View
+-:Constructor()
+-:Constructor(int)
+-:RollDown()
+-:RollUp()
+-:Set(int,int)
 
 Canvas > View
 -:Constructor()
@@ -643,37 +709,34 @@ Canvas > View
 -:Constructor(Bitmap)
 -:Clear()
 -:DoubleBuffer()
+-int:GetHeight()
+-int:GetWidth()
 -int:Peek(int)
 -:Poke(int,int)
 -:SingleBuffer()
 -:Smooth(boolean)
 -:SwapBuffers()
 
-FBO > View
--:Constructor()
--:Constructor(int,int)
--:Clear()
--:Ink(int)
--:Line(int,int,int,int)
--:Plot(int,int)
--:RectangleFill(int,int,int,int)
-
-FBO3D > View
-
 Sprite > GEL
 -:Constructor(Bitmap)
 -Bitmap:GetBitmap()
 
-Text > GEL
+Tiles > GEL
 -:Constructor(string)
+-:Constructor(CharacterSet,string)
+-:Constructor(CharacterSet,string,int,int)
+-string:GetText()
+-:hAlign(int)
+-:SetText(string)
+-:vAlign(int)
+
+Text > GEL
 -:Constructor(Font,string)
 -:Constructor(Font,string,int,int)
 -string:GetText()
 -:hAlign(int)
 -:SetText(string)
 -:vAlign(int)
-
-Layer > GEL
 
 Audio > Object
 
@@ -708,17 +771,25 @@ double|double:MinValue()
 double|double:NaN()
 double|double:NegativeInfinity()
 double|double:PositiveInfinity()
+string|string:Character(int)
 string|int:Count(string,int)
 string|boolean:EndsWith(string,string)
 string|int:GetCharacter(string,int)
 string|int:GetLength(string)
 string|int:IndexOf(string,string)
 string|int:IndexOf(string,string,int)
+string|string:Left(string,int)
+string|string:Pad(string,int)
 string|string:Repeat(string,int)
+string|string:Right(string,int)
 string|string:Slice(string,int)
 string|string:Slice(string,int,int)
 string|string:Space(int)
 string|boolean:StartsWith(string,string)
+string|string:ToBin(int)
+string|string:ToHex(int)
 string|string:ToLower(string)
 string|string:ToUpper(string)
 string|string:Trim(string)
+string|string:TrimEnd(string)
+string|string:TrimStart(string)

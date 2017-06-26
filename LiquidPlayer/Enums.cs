@@ -6,16 +6,20 @@ using System.Threading.Tasks;
 
 namespace LiquidPlayer
 {
-    #region ExceptionCode enums
-    public enum ExceptionCode
+    #region ErrorCode enums
+    public enum ErrorCode
     {
         None,
         InternalError,
-        NotImplemented,
-        User,
+        Timeout,
         OutOfMemory,
-        FileNotFound,
+        StackOverflow,
+        DivisionByZero,
+        NullObject,
         Denied,
+
+        User,
+        FileNotFound,
         IllegalQuantity,
         NotDimensioned,
         BadSubscript,
@@ -26,12 +30,7 @@ namespace LiquidPlayer
         ItemNotFound,
         DuplicateItem,
         StreamOpen,
-        StreamNotOpen,
-        Timeout,
-        StackOverflow,
-        Overflow,
-        DivisionByZero,
-        NullObject
+        StreamNotOpen
     }
     #endregion
 
@@ -157,16 +156,6 @@ namespace LiquidPlayer
         BlinkUnderline = 5,
         BoldUnderline = 6,
         BlinkBoldUnderline = 7
-    }
-    #endregion
-
-    #region ClipRectangleStyle enums
-    public enum ClipRectangleStyle
-    {
-        None,
-        Outline,
-        Raised,
-        Sunken
     }
     #endregion
 }

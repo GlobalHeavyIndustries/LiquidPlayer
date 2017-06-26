@@ -14,19 +14,19 @@ namespace LiquidPlayer.Kernal
             set;
         }
 
-        public int Compare
+        public int Compare 
         {
             get;
             set;
         }
 
-        public int Callback
+        public int Callback 
         {
             get;
             set;
         }
 
-        public int Update
+        public int Update 
         {
             get;
             set;
@@ -38,19 +38,13 @@ namespace LiquidPlayer.Kernal
             set;
         }
 
-        public int Shutdown
+        public int Shutdown 
         {
             get;
             set;
         }
 
         public List<Field> Fields
-        {
-            get;
-            set;
-        }
-
-        public List<Property> Properties
         {
             get;
             set;
@@ -106,15 +100,9 @@ namespace LiquidPlayer.Kernal
                 Render = -1,
                 Shutdown = -1,
                 Fields = new List<Field>(),
-                Properties = new List<Property>(),
                 Methods = new List<Method>(),
                 Functions = new List<Function>()
             };
-
-            item.Fields.Add(null);
-            item.Properties.Add(null);
-            item.Methods.Add(null);
-            item.Functions.Add(null);
 
             var liquidClass = (LiquidClass)bag.New(0, item);
 
@@ -199,18 +187,6 @@ namespace LiquidPlayer.Kernal
             return tag;
         }
 
-        public string GetTag(LiquidType liquidType)
-        {
-            var tag = getTag(liquidType.Class);
-
-            if (liquidType.Subclass != LiquidClass.None)
-            {
-                tag += "<" + getTag(liquidType.Subclass) + ">";
-            }
-
-            return tag;
-        }
-
         public LiquidClass Find(string tag)
         {
             switch (tag)
@@ -236,12 +212,14 @@ namespace LiquidPlayer.Kernal
             }
 
             Head();
+
             while (Cursor != 0)
             {
                 if (Read().Tag == tag)
                 {
                     return (LiquidClass)Cursor;
                 }
+
                 Next();
             }
 
@@ -278,28 +256,38 @@ namespace LiquidPlayer.Kernal
         {
             var id = (int)liquidClass;
 
+            var baseId = (int)baseLiquidClass;
+
             bag[id].TaskId = taskId;
             bag[id].BaseLiquidClass = baseLiquidClass;
             bag[id].MemoryRequired = memoryRequired;
+
+            bag[id].Clone = bag[baseId].Clone;
+            bag[id].Callback = bag[baseId].Callback;
+            bag[id].Update = bag[baseId].Update;
+            bag[id].Render = bag[baseId].Render;
+            bag[id].Shutdown = bag[baseId].Shutdown;
+
+            Extends(liquidClass, baseLiquidClass);
         }
 
         public bool IsBuiltInType(LiquidClass liquidClass)
         {
-            return (liquidClass < 0) ? true : false;
+            return (liquidClass < 0);
         }
 
         public bool IsPredefinedType(LiquidClass liquidClass)
         {
             var max = Enum.GetValues(typeof(LiquidClass)).Cast<int>().Max();
 
-            return (liquidClass > 0 && (int)liquidClass <= max) ? true : false;
+            return (liquidClass > 0 && (int)liquidClass <= max);
         }
 
         public bool IsCustomType(LiquidClass liquidClass)
         {
             var max = Enum.GetValues(typeof(LiquidClass)).Cast<int>().Max();
 
-            return ((int)liquidClass > max) ? true : false;
+            return ((int)liquidClass > max);
         }
 
         public void Extends(LiquidClass liquidClass, LiquidClass baseLiquidClass = LiquidClass.Object)
@@ -314,43 +302,26 @@ namespace LiquidPlayer.Kernal
             {
                 foreach (var field in baseItem.Fields)
                 {
-                    if (field != null)
-                    {
-                        item.Fields.Add(field);
-                    }
-                }
-
-                foreach (var property in baseItem.Properties)
-                {
-                    if (property != null)
-                    {
-                        item.Properties.Add(property);
-                    }
+                    item.Fields.Add(field);
                 }
 
                 foreach (var method in baseItem.Methods)
                 {
-                    if (method != null)
+                    if (method.Tag == "Constructor")
                     {
-                        if (method.Tag == "Constructor")
-                        {
-                            var emptyMethod = new Method();
+                        var emptyMethod = new Method();
 
-                            item.Methods.Add(emptyMethod);
-                        }
-                        else
-                        {
-                            item.Methods.Add(method);
-                        }
+                        item.Methods.Add(emptyMethod);
+                    }
+                    else
+                    {
+                        item.Methods.Add(method.Clone());
                     }
                 }
 
                 foreach (var function in baseItem.Functions)
                 {
-                    if (function != null)
-                    {
-                        item.Functions.Add(function);
-                    }
+                    item.Functions.Add(function.Clone());
                 }
             }
         }
@@ -374,73 +345,14 @@ namespace LiquidPlayer.Kernal
                 {
                     return true;
                 }
+
                 id = bag[(int)id].BaseLiquidClass;
             }
 
             return false;
         }
 
-        public int AddMethod(LiquidClass liquidClass, string tag, string parameters, LiquidType returnLiquidType, FunctionDelegate stub)
-        {
-            var item = bag[(int)liquidClass];
-
-            item.Methods.Add(new Method
-            {
-                AccessModifier = AccessModifier.Public,
-                IsVirtual = false,
-                ClassTag = item.Tag,
-                Tag = tag,
-                Parameters = parameters,
-                ReturnLiquidType = returnLiquidType,
-                Stub = stub,
-                Address = -1,
-                MemoryRequired = 0
-            });
-
-            return item.Methods.Count - 1;
-        }
-
-        public int AddMethod(LiquidClass liquidClass, string tag, string parameters, LiquidType returnLiquidType, int address)
-        {
-            var item = bag[(int)liquidClass];
-
-            item.Methods.Add(new Method
-            {
-                AccessModifier = AccessModifier.Public,
-                IsVirtual = false,
-                ClassTag = item.Tag,
-                Tag = tag,
-                Parameters = parameters,
-                ReturnLiquidType = returnLiquidType,
-                Stub = null,
-                Address = address,
-                MemoryRequired = 0
-            });
-
-            return item.Methods.Count - 1;
-        }
-
-        public int AddVirtualMethod(LiquidClass liquidClass, string tag, string parameters, LiquidType returnLiquidType, FunctionDelegate stub)
-        {
-            var item = bag[(int)liquidClass];
-
-            item.Methods.Add(new Method
-            {
-                AccessModifier = AccessModifier.Public,
-                IsVirtual = true,
-                ClassTag = item.Tag,
-                Tag = tag,
-                Parameters = parameters,
-                ReturnLiquidType = returnLiquidType,
-                Stub = stub,
-                Address = -1,
-                MemoryRequired = 0
-            });
-
-            return item.Methods.Count - 1;
-        }
-
-        public int AddVirtualMethod(LiquidClass liquidClass, string tag, string parameters, LiquidType returnLiquidType, int address)
+        public void BindMethod(LiquidClass liquidClass, string tag, int address)
         {
             var item = bag[(int)liquidClass];
 
@@ -462,6 +374,13 @@ namespace LiquidPlayer.Kernal
                     item.Shutdown = address;
                     break;
             }
+        }
+
+        public int AddVirtualMethod(LiquidClass liquidClass, string tag, string parameters, LiquidType returnLiquidType, string stub, FunctionDelegate functionDelegate)
+        {
+            BindMethod(liquidClass, tag, -1);
+
+            var item = bag[(int)liquidClass];
 
             item.Methods.Add(new Method
             {
@@ -471,19 +390,43 @@ namespace LiquidPlayer.Kernal
                 Tag = tag,
                 Parameters = parameters,
                 ReturnLiquidType = returnLiquidType,
-                Stub = null,
-                Address = address,
+                Stub = stub,
+                Target = new Target(functionDelegate),
                 MemoryRequired = 0
             });
 
             return item.Methods.Count - 1;
         }
 
-        public int FindMethod(LiquidClass liquidClass, string methodTag, string parameters = "()", LiquidType returnLiquidType = default(LiquidType))
+        public int AddVirtualMethod(LiquidClass liquidClass, string tag, string parameters, LiquidType returnLiquidType, int address)
+        {
+            BindMethod(liquidClass, tag, address);
+
+            var item = bag[(int)liquidClass];
+
+            item.Methods.Add(new Method
+            {
+                AccessModifier = AccessModifier.Public,
+                IsVirtual = true,
+                ClassTag = item.Tag,
+                Tag = tag,
+                Parameters = parameters,
+                ReturnLiquidType = returnLiquidType,
+                Stub = "",
+                Target = new Target(address),
+                MemoryRequired = 0
+            });
+
+            return item.Methods.Count - 1;
+        }
+
+        public int FindVirtualMethod(LiquidClass liquidClass, string methodTag, string parameters = "()", LiquidType returnLiquidType = default(LiquidType))
         {
             var item = bag[(int)liquidClass];
 
-            for (var index = 1; index < item.Methods.Count; index++)
+            var classTag = item.Tag;
+
+            for (var index = 0; index < item.Methods.Count; index++)
             {
                 var method = item.Methods[index];
 
@@ -493,28 +436,26 @@ namespace LiquidPlayer.Kernal
                 }
             }
 
-            return 0;
+            return -1;
         }
 
-        public int AddFunction(LiquidClass liquidClass, string tag, string parameters, LiquidType returnLiquidType, FunctionDelegate stub)
+        public void SetVirtualMethodTarget(LiquidClass liquidClass, int index, string stub, FunctionDelegate functionDelegate)
         {
             var item = bag[(int)liquidClass];
 
-            item.Functions.Add(new Function
-            {
-                AccessModifier = AccessModifier.Public,
-                ClassTag = item.Tag,
-                Tag = tag,
-                Parameters = parameters,
-                ReturnLiquidType = returnLiquidType,
-                Stub = stub,
-                Address = -1
-            });
-
-            return item.Functions.Count - 1;
+            item.Methods[index].Stub = stub;
+            item.Methods[index].Target = new Target(functionDelegate);
         }
 
-        public int AddFunction(LiquidClass liquidClass, string tag, string parameters, LiquidType returnLiquidType, int address)
+        public void SetVirtualMethodTarget(LiquidClass liquidClass, int index, int address)
+        {
+            var item = bag[(int)liquidClass];
+
+            item.Methods[index].Stub = "";
+            item.Methods[index].Target = new Target(address);
+        }
+
+        public void BindFunction(LiquidClass liquidClass, string tag, int address)
         {
             var item = bag[(int)liquidClass];
 
@@ -522,6 +463,13 @@ namespace LiquidPlayer.Kernal
             {
                 item.Compare = address;
             }
+        }
+
+        public int AddFunction(LiquidClass liquidClass, string tag, string parameters, LiquidType returnLiquidType, int address)
+        {
+            BindFunction(liquidClass, tag, address);
+
+            var item = bag[(int)liquidClass];
 
             item.Functions.Add(new Function
             {
@@ -530,8 +478,8 @@ namespace LiquidPlayer.Kernal
                 Tag = tag,
                 Parameters = parameters,
                 ReturnLiquidType = returnLiquidType,
-                Stub = null,
-                Address = address
+                Stub = "",
+                Target = new Target(address)
             });
 
             return item.Functions.Count - 1;
@@ -541,17 +489,19 @@ namespace LiquidPlayer.Kernal
         {
             var item = bag[(int)liquidClass];
 
-            for (var index = 1; index < item.Functions.Count; index++)
+            var classTag = item.Tag;
+
+            for (var index = 0; index < item.Functions.Count; index++)
             {
                 var function = item.Functions[index];
 
-                if (function.Tag == functionTag && function.Parameters == parameters && function.ReturnLiquidType.Combo == returnLiquidType.Combo)
+                if (function.ClassTag == classTag && function.Tag == functionTag && function.Parameters == parameters && function.ReturnLiquidType.Combo == returnLiquidType.Combo)
                 {
                     return index;
                 }
             }
 
-            return 0;
+            return -1;
         }
 
         public void Free(LiquidClass classId)

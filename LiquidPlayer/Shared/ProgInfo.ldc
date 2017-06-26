@@ -1,0 +1,58 @@
+class ProgInfo extends GEL
+{
+    private Font monoFont, font
+    private Text t1, t2, t3, t4
+    private Bitmap b
+    private Raster r
+    private Sprite bg
+    
+    public method Constructor(string title, string info)
+    {
+		monoFont = new Font("Inconsolata.otf", 15)
+        font = new Font("Haettenschweiler.ttf", 60)
+        
+        t1 = new Text(font, title)
+        t2 = new Text(font, title)
+        t3 = new Text(monoFont, info)
+        t4 = new Text(monoFont, info)
+        
+        t1.Show()
+        t1.Tint(COLOR_BLACK)
+        t1.Move(12, 12)
+        t1.hAlign(-1)
+        t1.vAlign(-1)
+        
+        t2.Show()
+        t2.Move(10, 10)
+        t2.hAlign(-1)
+        t2.vAlign(-1)
+        
+        var x = GetScreenWidth() / 2
+        var y = GetScreenHeight()
+
+        b = new Bitmap(32, 32)
+
+        r = new Raster(b)
+        r.Fill(Color.RGBA(0, 0, 0, 160))
+        r.Ink(Color.RGB(0, 0, 0))
+        r.hLine(0, 31, 0)
+        r.hLine(0, 31, 31)
+
+        bg = new Sprite(b)
+        bg.Priority(10000)
+        bg.Show()
+        bg.Move(x, y - 35)
+        bg.Scale(GetScreenWidth() / 32, 1)
+        
+        t3.Show()
+        t3.Tint(COLOR_BLACK)
+        t3.Move(x + 1, y - 35 + 1)
+        
+        t4.Show()
+        t4.Move(x, y - 35)
+
+        Priority(10000)
+
+          Show()
+    }
+}

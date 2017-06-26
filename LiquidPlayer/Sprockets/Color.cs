@@ -65,7 +65,7 @@ namespace LiquidPlayer.Sprockets
         public static readonly RGBA Blue = new RGBA(0, 0, 255);
         public static readonly RGBA Purple = new RGBA(0, 128, 255);
 
-        public static readonly RGBA Border = new RGBA(8, 8, 8);
+        public static readonly RGBA Border = new RGBA(16, 16, 16);
 
         private static int plasmaState;
         private static RGBA plasma;
@@ -204,11 +204,13 @@ namespace LiquidPlayer.Sprockets
         {
             var i = new RGBA(color);
 
+            var gray = (byte)(i.R * 0.299f + i.G * 0.587f + i.B * 0.114f);
+
             var c = new RGBA()
             {
-                R = (byte)(i.R * 0.299f),
-                G = (byte)(i.G * 0.587f),
-                B = (byte)(i.B * 0.114f),
+                R = gray,
+                G = gray,
+                B = gray,
                 A = i.A
             };
 

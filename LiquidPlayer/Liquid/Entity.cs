@@ -45,7 +45,7 @@ namespace LiquidPlayer.Liquid
             //Throw(ExceptionCode.NotImplemented);
         }
 
-        public virtual void Update(LiquidClass liquidClass)
+        public void VUpdate(LiquidClass liquidClass)
         {
             var address = LiquidPlayer.Program.ClassManager[liquidClass].Update;
 
@@ -66,7 +66,7 @@ namespace LiquidPlayer.Liquid
 
                 liquidClass = objectManager[entityId].LiquidClass;
 
-                entity.Update(liquidClass);
+                entity.VUpdate(liquidClass);
             }
         }
 
@@ -92,6 +92,13 @@ namespace LiquidPlayer.Liquid
 
                 task.Stop(objectId);
             }
+        }
+
+        public override void Destructor()
+        {
+            Stop();
+
+            base.Destructor();
         }
 
         public override void shutdown()

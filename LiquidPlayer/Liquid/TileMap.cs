@@ -17,8 +17,8 @@ namespace LiquidPlayer.Liquid
         protected int bitmapId;
         protected Bitmap bitmap;
 
-        protected int brushId;
-        protected Brush brush;
+        protected int rasterId;
+        protected Raster raster;
 
         protected int spriteId;
         protected Sprite sprite;
@@ -134,13 +134,13 @@ namespace LiquidPlayer.Liquid
             }
         }
 
-        public static int NewTileMap(int width, int height, int characterSetId, int parentId = 0)
+        public static int NewTileMap(int characterSetId, int width, int height, int parentId = 0)
         {
             var id = LiquidPlayer.Program.Exec.ObjectManager.New(LiquidClass.TileMap);
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -148,23 +148,23 @@ namespace LiquidPlayer.Liquid
                 LiquidPlayer.Program.Exec.ObjectManager.Hook(id, parentId);
             }
 
-            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new TileMap(id, width, height, characterSetId);
+            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new TileMap(id, characterSetId, width, height);
 
             return id;
         }
 
-        public TileMap(int id, int width, int height, int characterSetId)
+        public TileMap(int id, int characterSetId, int width, int height)
             : base(id)
         {
-            if (width < 4 || width > 256 || height < 4 || height > 256)
+            if (characterSetId == 0)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.NullObject);
                 return;
             }
 
-            if (characterSetId == 0)
+            if (width < 4 || width > 256 || height < 4 || height > 256)
             {
-                Throw(ExceptionCode.NullObject);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
 
@@ -183,7 +183,8 @@ namespace LiquidPlayer.Liquid
             this.height = height;
             this.size = width * height;
             this.inkColor = 0xFFFFFFFF;
-            this.highlightColor = 0;            
+            this.highlightColor = 0;
+            this.cursorColor = 0xFF00FFFF;
             this.screenData = new byte[size]; screenData.Fill((byte)32);
             this.colorData = new uint[size]; colorData.Fill(0xFFFFFFFF);
             this.state = 0;
@@ -200,7 +201,7 @@ namespace LiquidPlayer.Liquid
 
             if (bitmapId == 0)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
                 return;
             }
 
@@ -209,22 +210,22 @@ namespace LiquidPlayer.Liquid
 
             bitmap.Clear();
 
-            var brushId = Brush.NewBrush(bitmapId, id);
+            var rasterId = Raster.NewRaster(bitmapId, id);
 
-            if (brushId == 0)
+            if (rasterId == 0)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
                 return;
             }
 
-            this.brushId = brushId;
-            this.brush = objectManager[brushId].LiquidObject as Brush;
+            this.rasterId = rasterId;
+            this.raster = objectManager[rasterId].LiquidObject as Raster;
 
             var spriteId = Sprite.NewSprite(bitmapId, id);
 
             if (spriteId == 0)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
                 return;
             }
 
@@ -252,14 +253,14 @@ namespace LiquidPlayer.Liquid
 
             if (message.IsTo(objectId))
             {
-                if ((MessageBody)message.GetBody() == MessageBody.KeyDown)
+                if (message.GetBody() == MessageBody.KeyDown)
                 {
                     if (state != 1)
                     {
                         goto cleanExit;
                     }
 
-                    var key = message.GetData();
+                    var key = Convert.ToInt32(message.GetData());
 
                     var oldCursorX = cursorX;
                     var oldCursorY = cursorY;
@@ -375,6 +376,9 @@ namespace LiquidPlayer.Liquid
 
         public void Clear()
         {
+            cursorX = 0;
+            cursorY = 0;
+
             screenData = new byte[size]; screenData.Fill((byte)32);
             colorData = new uint[size]; colorData.Fill(0xFFFFFFFF);
 
@@ -443,7 +447,7 @@ namespace LiquidPlayer.Liquid
         {
             if (x < 0 || x >= width || y < 0 || y >= height)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
 
@@ -505,15 +509,36 @@ namespace LiquidPlayer.Liquid
             var rasterX = -(width * tileWidth) / 2;
             var rasterY = -(height * tileHeight) / 2;
 
+            var blink = (LiquidPlayer.Program.SystemClock % 1000 >= 500);
+
+            var showCursor = (blink && objectManager.Focus == objectId);
+
             bitmap.SwapBuffers();
 
             Sprockets.Graphics.LinkNextObject(spriteId);
-            sprite.Render(LiquidClass.Sprite, orthoId);
+            sprite.VRender(LiquidClass.Sprite, orthoId);
             Sprockets.Graphics.LinkNextObject(objectId);
 
             characterSetBitmap.SwapBuffers();
 
             Sprockets.Graphics.RenderTileMap(characterSet.DisplayList, width, height, tileWidth, tileHeight, screenData, colorData, rasterX, rasterY);
+
+            if (showCursor)
+            {
+                var cx = rasterX + (cursorX * tileWidth);
+                var cy = rasterY + (cursorY * tileHeight);
+
+                Sprockets.Graphics.MixColor(cursorColor);
+
+                if (cursorInsertMode)
+                {
+                    Sprockets.Graphics.RectangleFill(cx, cy + (tileHeight / 2), cx + tileWidth - 1, cy + tileHeight - 1);
+                }
+                else
+                {
+                    Sprockets.Graphics.RectangleFill(cx, cy, cx + tileWidth - 1, cy + tileHeight - 1);
+                }
+            }
         }
 
         public void ScrollUp()
@@ -532,14 +557,14 @@ namespace LiquidPlayer.Liquid
                 colorData[index] = 0xFFFFFFFF;
             }
 
-            brush.ScrollUp(0, 0, bitmap.Width - 1, bitmap.Height - 1);
+            raster.ScrollUp(0, 0, bitmap.Width - 1, bitmap.Height - 1);
         }
 
         public void Tab(int x)
         {
             if (x < 0 || x >= width)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
 
@@ -557,8 +582,8 @@ namespace LiquidPlayer.Liquid
             objectManager.Mark(bitmapId);
             bitmap = null;
 
-            objectManager.Mark(brushId);
-            brush = null;
+            objectManager.Mark(rasterId);
+            raster = null;
 
             objectManager.Mark(spriteId);
             sprite = null;

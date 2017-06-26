@@ -10,15 +10,15 @@ namespace LiquidPlayer.Liquid
 {
     public class Image : Bitmap
     {
-        protected string fileName;
+        protected string path;
 
-        public static int NewImage(string filename, int parentId = 0)
+        public static int NewImage(string path, int parentId = 0)
         {
             var id = LiquidPlayer.Program.Exec.ObjectManager.New(LiquidClass.Image);
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -26,38 +26,32 @@ namespace LiquidPlayer.Liquid
                 LiquidPlayer.Program.Exec.ObjectManager.Hook(id, parentId);
             }
 
-            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new Image(id, filename);
+            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new Image(id, path);
 
             return id;
         }
 
-        public Image(int id, string fileName)
+        public Image(int id, string path)
             : base(id)
         {
             // Load a BMP, GIF, EXIF, JPG, PNG, or TIFF image file
 
-            if (string.IsNullOrEmpty(fileName))
-            {
-                Throw(ExceptionCode.FileNotFound);
-                return;
-            }
+            var resolvedPath = Util.FindFile(path, LiquidPlayer.Program.SharedPath);
 
-            var path = Directory.GetCurrentDirectory() + @"\" + fileName;
-
-            if (!System.IO.File.Exists(path))
+            if (resolvedPath == "")
             {
-                Throw(ExceptionCode.FileNotFound, path);
+                RaiseError(ErrorCode.FileNotFound, Path.GetFileName(path));
                 return;
             }
 
             var width = 0;
             var height = 0;
 
-            var data = Sprockets.Graphics.LoadImage(fileName, out width, out height);
+            var data = Sprockets.Graphics.LoadImage(resolvedPath, out width, out height);
 
             if (data == null)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 
@@ -65,22 +59,23 @@ namespace LiquidPlayer.Liquid
             this.height = height;
             this.size = width * height;
 
-            this.data = new uint[size];
+            this.topX = width - 1;
+            this.topY = height - 1;
+
+            this.data = data;
             this.inSync = false;
             this.doubleBuffered = false;
-
-            Load(data);
 
             this.handle = Sprockets.Graphics.GenTexture();
             Sprockets.Graphics.BindTexture(handle, width, height, data);
             this.inSync = true;
 
-            this.fileName = path;
+            this.path = resolvedPath;
         }
 
         public override string ToString()
         {
-            return $"Image (Filename: \"{fileName}\")";
+            return $"Image (Path: \"{path}\", Resolution: {width}x{height})";
         }
 
         public override void shutdown()

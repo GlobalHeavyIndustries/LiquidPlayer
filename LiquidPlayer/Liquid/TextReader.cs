@@ -25,7 +25,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -43,7 +43,7 @@ namespace LiquidPlayer.Liquid
         {
             if (streamId == 0)
             {
-                Throw(ExceptionCode.NullObject);
+                RaiseError(ErrorCode.NullObject);
                 return;
             }
 
@@ -52,13 +52,13 @@ namespace LiquidPlayer.Liquid
 
             if (!stream.IsOpen)
             {
-                Throw(ExceptionCode.StreamNotOpen);
+                RaiseError(ErrorCode.StreamNotOpen);
                 return;
             }
 
             if (!stream.CanRead)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
         }

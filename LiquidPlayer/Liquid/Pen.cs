@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LiquidPlayer.Liquid
 {
-    public class Pen : Brush
+    public class Pen : Raster
     {
         protected int characterSetId;
         protected CharacterSet characterSet;
@@ -28,7 +28,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -46,7 +46,7 @@ namespace LiquidPlayer.Liquid
         {
             if (bitmapId == 0 || characterSetId == 0)
             {
-                Throw(ExceptionCode.NullObject);
+                RaiseError(ErrorCode.NullObject);
                 return;
             }
 

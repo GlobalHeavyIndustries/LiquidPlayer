@@ -6,13 +6,21 @@ using System.Threading.Tasks;
 
 namespace LiquidPlayer.Liquid
 {
-    public delegate int CloneDelegate(int id);
+    public delegate int CloneDelegate(int ownerId, int id);
     public delegate int CompareDelegate(int lhs, int rhs);
     public delegate void FreeDelegate(int id);
 
     public class Collection : Object
     {
         protected int classId;
+
+        public int ClassId
+        {
+            get
+            {
+                return classId;
+            }
+        }
 
         public Collection(int id, int classId)
             : base(id)

@@ -46,7 +46,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)

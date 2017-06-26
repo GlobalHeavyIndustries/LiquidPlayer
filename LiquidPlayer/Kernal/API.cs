@@ -27,7 +27,7 @@ namespace LiquidPlayer.Kernal
             }
         }
 
-        public int AddFunction(LiquidClass liquidClass, string tag, string parameters, LiquidClass returnLiquidClass, LiquidClass returnLiquidSubclass, FunctionDelegate stub)
+        public int AddFunction(LiquidClass liquidClass, string tag, string parameters, LiquidClass returnLiquidClass, LiquidClass returnLiquidSubclass, string stub, FunctionDelegate functionDelegate)
         {
             var classTag = Program.ClassManager.GetTag(liquidClass);
 
@@ -40,7 +40,7 @@ namespace LiquidPlayer.Kernal
                 ReturnLiquidType = new LiquidType(returnLiquidClass, returnLiquidSubclass),
                 Inline = pCode.None,
                 Stub = stub,
-                Address = -1,
+                Target = new Target(functionDelegate),
                 MemoryRequired = 0
             });
 
@@ -59,8 +59,7 @@ namespace LiquidPlayer.Kernal
                 Parameters = parameters,
                 ReturnLiquidType = new LiquidType(returnLiquidClass, returnLiquidSubclass),
                 Inline = pCode.None,
-                Stub = null,
-                Address = address,
+                Target = new Target(address),
                 MemoryRequired = 0
             });
 

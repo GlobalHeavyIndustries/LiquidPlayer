@@ -18,7 +18,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -133,7 +133,7 @@ namespace LiquidPlayer.Liquid
                 }
                 else
                 {
-                    Throw(ExceptionCode.Denied);
+                    RaiseError(ErrorCode.Denied);
                     return;
                 }
             }
@@ -153,7 +153,7 @@ namespace LiquidPlayer.Liquid
         {
             if (index < 0 || index >= arguments.Count)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return "";
             }
 
@@ -166,7 +166,7 @@ namespace LiquidPlayer.Liquid
 
             if (listId == 0)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
                 return 0;
             }
 
@@ -178,7 +178,7 @@ namespace LiquidPlayer.Liquid
 
                 list.Add(id);
 
-                FreeString(objectId, id);
+                FreeString(id);
             }
 
             return listId;
@@ -188,7 +188,7 @@ namespace LiquidPlayer.Liquid
         {
             if (index < 65 || (index > 90 && index < 97) || index > 122)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return 0;
             }
 

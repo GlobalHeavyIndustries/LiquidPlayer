@@ -73,7 +73,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -91,7 +91,8 @@ namespace LiquidPlayer.Liquid
         {
             if (fontId == 0)
             {
-                fontId = objectManager.ConsoleFontId;
+                RaiseError(ErrorCode.NullObject);
+                return;
             }
 
             this.fontId = objectManager.Copy(fontId);
@@ -108,20 +109,8 @@ namespace LiquidPlayer.Liquid
             return $"Text (\"{caption}\")";
         }
 
-        public void hAlign(int alignment)
+        private void calcCoords()
         {
-            xAlignment = Math.Sign(alignment);
-        }
-
-        public void vAlign(int alignment)
-        {
-            yAlignment = Math.Sign(alignment);
-        }
-
-        public void SetCaption(string caption)
-        {
-            this.caption = caption;
-
             width = font.GetWidth(caption);
             height = font.GetHeight();
 
@@ -150,6 +139,27 @@ namespace LiquidPlayer.Liquid
             {
                 yOffset = -(height / 2);
             }
+        }
+
+        public void hAlign(int alignment)
+        {
+            xAlignment = Math.Sign(alignment);
+
+            calcCoords();
+        }
+
+        public void vAlign(int alignment)
+        {
+            yAlignment = Math.Sign(alignment);
+
+            calcCoords();
+        }
+
+        public void SetCaption(string caption)
+        {
+            this.caption = caption;
+
+            calcCoords();
         }
 
         protected override void render(int orthoId)

@@ -10,17 +10,17 @@ namespace LiquidPlayer.Liquid
 {
     public class Music : Audio
     {
-        protected string filename;
+        protected string path;
 
         protected WindowsMediaPlayer windowsMediaPlayer;
 
-        public static int NewMusic(string filename, int parentId = 0)
+        public static int NewMusic(string path, int parentId = 0)
         {
             var id = LiquidPlayer.Program.Exec.ObjectManager.New(LiquidClass.Music);
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -28,25 +28,25 @@ namespace LiquidPlayer.Liquid
                 LiquidPlayer.Program.Exec.ObjectManager.Hook(id, parentId);
             }
 
-            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new Music(id, filename);
+            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new Music(id, path);
 
             return id;
         }
 
-        public Music(int id, string filename)
+        public Music(int id, string path)
             : base(id)
         {
             // check file exists, throw exception if not (see Image)
 
-            this.filename = filename;
+            this.path = path;
 
             this.windowsMediaPlayer = new WindowsMediaPlayer();
-            this.windowsMediaPlayer.URL = filename;
+            this.windowsMediaPlayer.URL = path;
         }
 
         public override string ToString()
         {
-            return $"Music (Filename: \"{filename}\")";
+            return $"Music (Path: \"{path}\")";
         }
 
         public void Play()

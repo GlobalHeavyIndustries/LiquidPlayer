@@ -1,24 +1,4 @@
-﻿/*
- 
-    Liquid Player
-    © 2017 by Bryan Flick
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -38,10 +18,11 @@ namespace LiquidPlayer
 {
     public class Program
     {
-        public const int WIDTH = 960, HEIGHT = 540;
+        public const int WIDTH = 1280, HEIGHT = 720;    // HD
         public const int VM_STACK_SIZE = 16384;
 
         private static string tempPath = "";
+        private static string sharedPath = "";
 
         private static GameWindow gameWindow;
 
@@ -49,6 +30,7 @@ namespace LiquidPlayer
         private static int windowWidth, windowHeight;
 
         private static HiResTimer hiResTimer = new HiResTimer();
+        private static long startTime = hiResTimer.Value;
         private static Log log = new Log();
         private static Random random = new Random();
 
@@ -58,11 +40,22 @@ namespace LiquidPlayer
 
         private static Exec.Exec exec = new Exec.Exec();
 
+        private static int mouseUpEventTime;
+        private static int mouseWheelEventTime;
+
         public static string TempPath
         {
             get
             {
                 return tempPath;
+            }
+        }
+
+        public static string SharedPath
+        {
+            get
+            {
+                return sharedPath;
             }
         }
 
@@ -128,7 +121,7 @@ namespace LiquidPlayer
             {
                 // Accurate to 1,000 ms (1 second)
 
-                var value = hiResTimer.Value;
+                var value = hiResTimer.Value - startTime;
                 var resolution = hiResTimer.Frequency / 1000d;
 
                 return (int)(value / resolution);
@@ -141,7 +134,7 @@ namespace LiquidPlayer
             {
                 // Accurate to 1,000,000 hz (1 second)
 
-                var value = hiResTimer.Value;
+                var value = hiResTimer.Value - startTime;
                 var resolution = hiResTimer.Frequency / 1000000d;
 
                 return (long)(value / resolution);
@@ -199,9 +192,17 @@ namespace LiquidPlayer
         [STAThread]
         public static void Main(string[] args)
         {
+            Application.ThreadException += new System.Threading.ThreadExceptionEventHandler(OnThreadException);
+
+            AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
+
+
             tempPath = Path.GetTempPath() + "LiquidStudio-";
 
-            var fileName = "";
+            sharedPath = Directory.GetCurrentDirectory() + @"\Shared\";
+
+
+            var path = "";
 
             var commandLine = "";
 
@@ -218,7 +219,7 @@ namespace LiquidPlayer
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    fileName = openFileDialog.FileName;
+                    path = openFileDialog.FileName;
                 }
                 else
                 {
@@ -227,7 +228,7 @@ namespace LiquidPlayer
             }
             else
             {
-                fileName = argumentList[0];
+                path = argumentList[0];
 
                 if (argumentList.Count == 2)
                 {
@@ -256,7 +257,7 @@ namespace LiquidPlayer
 
                 exec.ObjectManager.LoadDefaultResources();
 
-                var taskId = MultiLoad(fileName, commandLine);
+                var taskId = MultiLoad(path, commandLine);
 
                 if (taskId == 0)
                 {
@@ -280,7 +281,17 @@ namespace LiquidPlayer
             }
         }
 
-        public static int MultiLoad(string fileName, string commandLine)
+        public static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            MessageBox.Show("CurrentDomain_UnhandledException: " + e.ExceptionObject.ToString(), "Guru Meditation Error");
+        }
+
+        public static void OnThreadException(object sender, System.Threading.ThreadExceptionEventArgs t)
+        {
+            MessageBox.Show("OnThreadException: " + t.Exception.ToString(), "Guru Meditation Error");
+        }
+
+        public static int MultiLoad(string path, string commandLine)
         {
             // TODO!
             //
@@ -290,27 +301,20 @@ namespace LiquidPlayer
             var taskId = 0;
             var taskType = 0;
 
-            var sourceFilePath = Path.GetDirectoryName(fileName);
-
-            if (sourceFilePath == "")
+            if (!path.EndsWith(".ldx"))
             {
-                sourceFilePath = Directory.GetCurrentDirectory();
+                path += ".ldx";
             }
 
-            var sourceFileName = Path.GetFileName(fileName);
+            var resolvedPath = Util.FindFile(path, SharedPath);
 
-            if (!sourceFileName.EndsWith(".ldx"))
-            {
-                sourceFileName += ".ldx";
-            }
-
-            if (!File.Exists(sourceFilePath + "\\" + sourceFileName))
+            if (resolvedPath == "")
             {
                 MessageBox.Show("File not found", "Fatal Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return 0;
             }
 
-            Compression.DecompressFile(sourceFilePath + "\\" + sourceFileName, Program.TempPath + "temp.ldx", CompressionType.GZip);
+            Compression.DecompressFile(resolvedPath, TempPath + "temp.ldx", CompressionType.GZip);
 
             using (BinaryReader reader = new BinaryReader(File.Open(Program.TempPath + "temp.ldx", FileMode.Open)))
             {
@@ -342,10 +346,10 @@ namespace LiquidPlayer
                 case 1:
                     throw new NotImplementedException();
                 case 2:
-                    taskId = Liquid.Program.NewProgram(fileName, commandLine);
+                    taskId = Liquid.Program.NewProgram(resolvedPath, commandLine);
                     break;
                 case 3:
-                    taskId = Liquid.App.NewApp(fileName, commandLine);
+                    taskId = Liquid.App.NewApp(resolvedPath, commandLine);
                     break;
                 case 4:
                     throw new NotImplementedException();
@@ -356,7 +360,7 @@ namespace LiquidPlayer
 
         public static GameWindow NewGameWindow(int width, int height)
         {
-            gameWindow = new GameWindow(width, height, new OpenTK.Graphics.GraphicsMode(new OpenTK.Graphics.ColorFormat(8, 8, 8, 8), 24, 8), "Liquid Player");
+            gameWindow = new GameWindow(width, height, new OpenTK.Graphics.GraphicsMode(new OpenTK.Graphics.ColorFormat(8, 8, 8, 8), 24, 8, 4), "Liquid Player");
 
             gameWindow.Icon = new System.Drawing.Icon("player.ico");
 
@@ -412,26 +416,34 @@ namespace LiquidPlayer
 
         private static void GameWindow_KeyDown(object sender, KeyboardKeyEventArgs e)
         {
-            if (Exec.ObjectManager.Focus != 0)
+            var focus = Exec.ObjectManager.Focus;
+            var key = Sprockets.Input.TranslateKey(e.Key);
+
+            if (focus != 0)
             {
-                Exec.Router.Send(0, Exec.ObjectManager.Focus, (int)MessageBody.KeyDown, Sprockets.Input.TranslateKey(e.Key));
+                Exec.Router.Send(0, focus, MessageBody.KeyDown, key.ToString(), Exec.ActiveTask);
             }
         }
 
         private static void GameWindow_KeyUp(object sender, KeyboardKeyEventArgs e)
         {
-            if (Exec.ObjectManager.Focus != 0)
+            var focus = Exec.ObjectManager.Focus;
+            var key = Sprockets.Input.TranslateKey(e.Key);
+
+            if (focus != 0)
             {
-                Exec.Router.Send(0, Exec.ObjectManager.Focus, (int)MessageBody.KeyUp, Sprockets.Input.TranslateKey(e.Key));
+                Exec.Router.Send(0, focus, MessageBody.KeyUp, key.ToString(), Exec.ActiveTask);
+
+                Exec.Router.Send(0, focus, MessageBody.KeyPress, key.ToString(), Exec.ActiveTask);
             }
         }
 
         private static void GameWindow_KeyPress(object sender, OpenTK.KeyPressEventArgs e)
         {
-            if (Exec.ObjectManager.Focus != 0)
-            {
-                Exec.Router.Send(0, Exec.ObjectManager.Focus, (int)MessageBody.KeyPress, e.KeyChar);
-            }
+            //if (Exec.ObjectManager.Focus != 0)
+            //{
+            //    Exec.Router.Send(0, Exec.ObjectManager.Focus, MessageBody.KeyPress, e.KeyChar.ToString(), Exec.ActiveTask);
+            //}
         }
 
         private static void GameWindow_MouseMove(object sender, MouseMoveEventArgs e)
@@ -443,7 +455,7 @@ namespace LiquidPlayer
         }
 
         private static void GameWindow_MouseDown(object sender, MouseButtonEventArgs e)
-        {
+        { 
             Sprockets.Input.MouseButton = (e.IsPressed) ? 1 : 0;
 
             Sprockets.Input.MouseClicked();
@@ -453,7 +465,13 @@ namespace LiquidPlayer
 
             if (clickedOn != 0)
             {
-                Exec.Router.Send(0, clickedOn, (int)MessageBody.MouseDown, clickedOnNode);
+                Exec.Router.Send(0, clickedOn, MessageBody.MouseDown, clickedOnNode.ToString(), Exec.ActiveTask);
+
+                Exec.ObjectManager.Focus = clickedOn;
+            }
+            else
+            {
+                Exec.ObjectManager.Focus = Exec.ActiveTask;
             }
         }
 
@@ -466,7 +484,20 @@ namespace LiquidPlayer
 
             if (clickedOn != 0)
             {
-                Exec.Router.Send(0, clickedOn, (int)MessageBody.MouseUp, clickedOnNode);
+                Exec.Router.Send(0, clickedOn, MessageBody.MouseUp, clickedOnNode.ToString(), Exec.ActiveTask);
+
+                if (mouseUpEventTime != 0 && SystemClock <= mouseUpEventTime + 500)
+                {
+                    Exec.Router.Send(0, clickedOn, MessageBody.DoubleClicked, clickedOnNode.ToString(), Exec.ActiveTask);
+
+                    mouseUpEventTime = 0;
+                }
+                else 
+                {
+                    Exec.Router.Send(0, clickedOn, MessageBody.Clicked, clickedOnNode.ToString(), Exec.ActiveTask);
+
+                    mouseUpEventTime = SystemClock;
+                }
             }
 
             Sprockets.Input.MouseUnClicked();
@@ -474,9 +505,18 @@ namespace LiquidPlayer
 
         private static void GameWindow_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            var delta = e.DeltaPrecise * System.Windows.Forms.SystemInformation.MouseWheelScrollLines / 120;
+            // WINDOWS 10 / TKS FIX!! (otherwise MouseWheel event fires twice)
 
-            //Exec.Router.Send(0, Exec.ObjectManager.Focus, (int)MessageBody.MouseWheel, (int)delta);
+            if (mouseWheelEventTime == SystemClock)
+            {
+                return;
+            }
+
+            var delta = e.Delta; // e.DeltaPrecise;
+
+            Exec.Router.Send(0, Exec.ObjectManager.Focus, MessageBody.MouseWheel, delta.ToString(), Exec.ActiveTask);
+
+            mouseWheelEventTime = SystemClock;
         }
 
         private static void GameWindow_Resize(object sender, EventArgs e)

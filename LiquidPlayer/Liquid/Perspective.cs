@@ -14,7 +14,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -53,20 +53,6 @@ namespace LiquidPlayer.Liquid
         public void Begin(int mode)
         {
             Sprockets.Graphics.Begin((OpenTK.Graphics.OpenGL.PrimitiveType)mode);
-        }
-
-        public void BindTexture(int bitmapId)
-        {
-            if (bitmapId == 0)
-            {
-                Sprockets.Graphics.NoTextureMap();
-            }
-            else
-            {
-                var bitmap = objectManager[bitmapId].LiquidObject as Bitmap;
-
-                Sprockets.Graphics.TextureMap(bitmap.Handle);
-            }
         }
 
         public void Blend(bool mode)
@@ -123,6 +109,16 @@ namespace LiquidPlayer.Liquid
             Sprockets.Graphics.LoadIdentity();
         }
 
+        public void Normal(double x, double y, double z)
+        {
+            Sprockets.Graphics.Normal(x, y, z);
+        }
+
+        public void PointSize(float size)
+        {
+            Sprockets.Graphics.PointSize(size);
+        }
+
         public void PopMatrix()
         {
             Sprockets.Graphics.PopMatrix();
@@ -138,9 +134,28 @@ namespace LiquidPlayer.Liquid
             Sprockets.Graphics.Rotate(angle, x, y, z);
         }
 
+        public void Scale(double x, double y, double z)
+        {
+            Sprockets.Graphics.Scale(x, y, z);
+        }
+
         public void TexCoord(double x, double y)
         {
             Sprockets.Graphics.TexCoord(x, y);
+        }
+
+        public void TextureMap(int bitmapId)
+        {
+            if (bitmapId == 0)
+            {
+                Sprockets.Graphics.NoTextureMap();
+            }
+            else
+            {
+                var bitmap = objectManager[bitmapId].LiquidObject as Bitmap;
+
+                bitmap.TextureMap();
+            }
         }
 
         public void Translate(double x, double y, double z)

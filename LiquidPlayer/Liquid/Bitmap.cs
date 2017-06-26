@@ -42,6 +42,9 @@ namespace LiquidPlayer.Liquid
         protected int height;
         protected int size;
 
+        protected int topX;
+        protected int topY;
+
         protected uint[] data;
         protected bool inSync;
         protected bool doubleBuffered;
@@ -78,13 +81,29 @@ namespace LiquidPlayer.Liquid
             }
         }
 
+        public int TopX
+        {
+            get
+            {
+                return topX;
+            }
+        }
+
+        public int TopY
+        {
+            get
+            {
+                return topY;
+            }
+        }
+
         public static int NewBitmap(int width, int height, int parentId = 0)
         {
             var id = LiquidPlayer.Program.Exec.ObjectManager.New(LiquidClass.Bitmap);
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -106,6 +125,9 @@ namespace LiquidPlayer.Liquid
             this.height = 0;
             this.size = 0;
 
+            this.topX = 0;
+            this.topY = 0;
+
             this.data = null;
             this.inSync = false;
             this.doubleBuffered = false;
@@ -116,13 +138,16 @@ namespace LiquidPlayer.Liquid
         {
             if (width < 1 || width > Sprockets.Graphics.MaxTextureSize || height < 1 || height > Sprockets.Graphics.MaxTextureSize)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
 
             this.width = width;
             this.height = height;
             this.size = width * height;
+
+            this.topX = width - 1;
+            this.topY = height - 1;
 
             this.data = new uint[size];
             this.inSync = false;
@@ -166,25 +191,40 @@ namespace LiquidPlayer.Liquid
 
         public void FastPoke(int index, uint color)
         {
-            data[index] = color;
+            var y = index / width;
+            var x = index - (y * width);
+
+            var newIndex = (topY - y) * width + x;
+
+            data[newIndex] = color;
 
             inSync = false;
         }
 
         public uint FastPeek(int index)
         {
-            return data[index];
+            var y = index / width;
+            var x = index - (y * width);
+
+            var newIndex = (topY - y) * width + x;
+
+            return data[newIndex];
         }
 
         public void Poke(int index, uint color)
         {
             if (index < 0 || index >= size)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
 
-            data[index] = color;
+            var y = index / width;
+            var x = index - (y * width);
+
+            var newIndex = (topY - y) * width + x;
+
+            data[newIndex] = color;
 
             inSync = false;
         }
@@ -193,18 +233,23 @@ namespace LiquidPlayer.Liquid
         {
             if (index < 0 || index >= size)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return 0;
             }
 
-            return data[index];
+            var y = index / width;
+            var x = index - (y * width);
+
+            var newIndex = (topY - y) * width + x;
+
+            return data[newIndex];
         }
 
         public void Load(uint[] data)
         {
             if (data.Length != this.data.Length)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 
@@ -222,9 +267,16 @@ namespace LiquidPlayer.Liquid
         {
             var array = new Sprockets.Color.RGBA[size];
 
-            for (var i = 0; i < size; i++)
+            var index = 0;
+
+            for (var y = height - 1; y >= 0; y--)
             {
-                array[i].Uint = data[i];
+                var offset = y * width;
+
+                for (var x = 0; x < width; x++)
+                {
+                    array[offset++].Uint = data[index++];
+                }
             }
 
             return array;
@@ -268,6 +320,18 @@ namespace LiquidPlayer.Liquid
             }
 
             Sprockets.Graphics.RenderTexture(handle, x1, y1, x2, y2);
+        }
+
+        public void TextureMap()
+        {
+            if (!doubleBuffered && !inSync)
+            {
+                Sprockets.Graphics.UpdateTexture(handle, width, height, data);
+
+                inSync = true;
+            }
+
+            Sprockets.Graphics.TextureMap(handle);
         }
 
         public override void Destructor()

@@ -4,74 +4,65 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using System.IO;
+using System.Runtime.InteropServices;
 
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using System.Drawing.Text;
+using System.IO;
 
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Input;
 using OpenTK.Platform;
 
+using System.Drawing;
+using System.Drawing.Imaging;
+
 namespace LiquidPlayer.Sprockets
 {
     public static class Graphics
     {
-        private struct graphicsLinks
+        public struct IVector2
         {
-            public int ObjectId
-            {
-                get;
-                set;
-            }
+            public int X;
+            public int Y;
 
-            public int Node
+            public IVector2(int x, int y)
             {
-                get;
-                set;
+                X = x;
+                Y = y;
             }
         }
 
-        private struct clipNode
+        public struct BoundingBox
         {
-            public int ObjectId
-            {
-                get;
-                set;
-            }
+            public int X1;
+            public int Y1;
+            public int X2;
+            public int Y2;
+        }
 
-            public int X1
-            {
-                get;
-                set;
-            }
+        private struct GraphicsLinks
+        {
+            public int ObjectId;
+            public int Node;
+        }
 
-            public int Y1
-            {
-                get;
-                set;
-            }
+        public struct ClipNode
+        {
+            public int ObjectId;
+            public int X1;
+            public int Y1;
+            public int X2;
+            public int Y2;
+            public double[] Matrix;
+        }
 
-            public int X2
-            {
-                get;
-                set;
-            }
-
-            public int Y2
-            {
-                get;
-                set;
-            }
-
-            public double[] Matrix
-            {
-                get;
-                set;
-            }
+        public struct Character
+        {
+            public int TextureId;
+            public IVector2 Size;
+            public IVector2 Bearing;
+            public int Advance;
+            public uint[] Data;
         }
 
         public struct GLState
@@ -96,8 +87,14 @@ namespace LiquidPlayer.Sprockets
 
             public FrameBuffer(int width, int height)
             {
-                Width = width;
-                Height = height;
+                this.Width = width;
+                this.Height = height;
+
+                this.Fbo = 0;
+                this.FboDepth = 0;
+                this.FboTexture = 0;
+
+                this.GLState = default(GLState);
             }
         }
 
@@ -109,7 +106,7 @@ namespace LiquidPlayer.Sprockets
         private static int objectId;
         private static int node;
         private static int depthBase;
-        private static graphicsLinks[] links;
+        private static GraphicsLinks[] links;
 
         private static bool sorted;
         private static bool sorted3D;
@@ -119,7 +116,7 @@ namespace LiquidPlayer.Sprockets
         private static double[] matrixStack;
         private static int matrixStackPointer;
 
-        private static clipNode[] clipStack;
+        private static ClipNode[] clipStack;
         private static int clipStackPointer;
 
         private static int maxTextureSize;
@@ -192,24 +189,29 @@ namespace LiquidPlayer.Sprockets
         public static void Init(int width, int height)
         {
             GL.ClearColor(0f, 0f, 0f, 1f);
-            GL.ClearDepth(1f);
+            GL.ClearDepth(1d);
             GL.ClearStencil(0);
 
             Clear();
 
+            GL.Enable(EnableCap.Multisample);
+
             GL.ShadeModel(ShadingModel.Smooth);
+
             GL.Disable(EnableCap.PointSmooth);
             GL.Disable(EnableCap.LineSmooth);
             GL.Disable(EnableCap.PolygonSmooth);
+
             GL.Disable(EnableCap.ScissorTest);
             GL.Disable(EnableCap.AlphaTest);
             GL.Disable(EnableCap.StencilTest);
             GL.Disable(EnableCap.DepthTest);
+
+            GL.Disable(EnableCap.CullFace);
+
             GL.Disable(EnableCap.Blend);
             GL.Disable(EnableCap.Dither);
             GL.Disable(EnableCap.Lighting);
-
-            GL.Disable(EnableCap.CullFace);
 
             GL.Hint(HintTarget.PointSmoothHint, HintMode.Nicest);
             GL.Hint(HintTarget.LineSmoothHint, HintMode.Nicest);
@@ -222,22 +224,23 @@ namespace LiquidPlayer.Sprockets
 
             ResetNodes();
 
-            links = new graphicsLinks[65536];
+            links = new GraphicsLinks[65536];
 
             sorted = true;
             sorted3D = true;
 
-            inkColor = Sprockets.Color.White;
+            inkColor = Color.White;
 
             matrixStack = new double[16];
             matrixStackPointer = 0;
 
-            clipStack = new clipNode[256];
+            clipStack = new ClipNode[256];
             clipStackPointer = 0;
 
             maxTextureSize = GL.GetInteger(GetPName.MaxTextureSize);
 
             textureUnits = GL.GetInteger(GetPName.MaxTextureUnits);
+
             if (textureUnits < 1)
             {
                 textureUnits = 1;
@@ -246,9 +249,12 @@ namespace LiquidPlayer.Sprockets
             {
                 textureUnits = 32;
             }
+
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
         }
 
-        public static ErrorCode GetError()
+        public static OpenTK.Graphics.OpenGL.ErrorCode GetError()
         {
             return GL.GetError();
         }
@@ -369,7 +375,7 @@ namespace LiquidPlayer.Sprockets
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadIdentity();
 
-            var yMax = zNear * System.Math.Tan((fovy * 3.14159265358979d) / 360d);
+            var yMax = zNear * System.Math.Tan((fovy * System.Math.PI) / 360d);
             var yMin = -yMax;
             var xMin = yMin * aspect;
             var xMax = yMax * aspect;
@@ -391,7 +397,7 @@ namespace LiquidPlayer.Sprockets
 
         private static void pushLink()
         {
-            links[depthBase] = new graphicsLinks
+            links[depthBase] = new GraphicsLinks
             {
                 ObjectId = objectId,
                 Node = node
@@ -407,7 +413,7 @@ namespace LiquidPlayer.Sprockets
         public static void LinkObject(int objectId)
         {
             GL.LoadIdentity();
-            GL.Translate(0f, 0f, depthBase);
+            GL.Translate(0d, 0d, depthBase);
 
             Graphics.objectId = objectId;
             Graphics.node = 0;
@@ -417,7 +423,7 @@ namespace LiquidPlayer.Sprockets
 
         public static void LinkNextObject(int objectId)
         {
-            GL.Translate(0f, 0f, 1f);
+            GL.Translate(0d, 0d, 1d);
 
             Graphics.objectId = objectId;
             Graphics.node = 0;
@@ -427,7 +433,7 @@ namespace LiquidPlayer.Sprockets
 
         public static void LinkNextNode(int node)
         {
-            GL.Translate(0f, 0f, 1f);
+            GL.Translate(0d, 0d, 1d);
 
             Graphics.node = node;
 
@@ -593,8 +599,10 @@ namespace LiquidPlayer.Sprockets
 
         // Clipping
         
-        public static void ClipRectangle(int objectId, int x1, int y1, int x2, int y2, Color.RGBA bg, ClipRectangleStyle style = ClipRectangleStyle.None)
+        public static void ClipRectangle(int x1, int y1, int x2, int y2, Color.RGBA bg, Color.RGBA border)
         {
+            CleanClipStack();
+
             if (clipStackPointer == 255)
             {
                 throw new Exception("Stack overflow");
@@ -609,31 +617,15 @@ namespace LiquidPlayer.Sprockets
                 GL.StencilOp(OpenTK.Graphics.OpenGL.StencilOp.Keep, OpenTK.Graphics.OpenGL.StencilOp.Keep, OpenTK.Graphics.OpenGL.StencilOp.Keep);
             }
 
-            switch (style)
+            if (border.A != 0)
             {
-                case ClipRectangleStyle.None:
-                    break;
-                case ClipRectangleStyle.Outline:
-                    GL.Color4(0f, 0f, 0f, 1f);
-                    Rectangle(x1 - 1, y1 - 1, x2 + 1, y2 + 1);
-                    break;
-                case ClipRectangleStyle.Raised:
-                    ThickFrame(x1 - 2, y1 - 2, x2 + 2, y2 + 2, Sprockets.Color.White, Sprockets.Color.Gray);
-                    GL.Color4(0f, 0f, 0f, 1f);
-                    Rectangle(x1 - 3, y1 - 3, x2 + 3, y2 + 3);
-                    break;
-                case ClipRectangleStyle.Sunken:
-                    ThickFrame(x1 - 2, y1 - 2, x2 + 2, y2 + 2, Sprockets.Color.Gray, Sprockets.Color.White);
-                    GL.Color4(0f, 0f, 0f, 1f);
-                    Rectangle(x1 - 3, y1 - 3, x2 + 3, y2 + 3);
-                    break;
-                default:
-                    throw new Exception("Illegal quantity");
+                MixColor(border.Uint);
+                Rectangle(x1 - 1, y1 - 1, x2 + 1, y2 + 1);
             }
 
             GL.StencilOp(OpenTK.Graphics.OpenGL.StencilOp.Keep, OpenTK.Graphics.OpenGL.StencilOp.Keep, OpenTK.Graphics.OpenGL.StencilOp.Incr);
 
-            if (bg.A == 0f)
+            if (bg.A == 0)
             {
                 GL.ColorMask(false, false, false, false);
                 GL.Color4(1f, 1f, 1f, 1f);
@@ -648,14 +640,16 @@ namespace LiquidPlayer.Sprockets
 
             sp++;
 
-            clipStack[sp] = new clipNode
+            clipStack[sp] = new ClipNode
             {
                 ObjectId = objectId,
                 X1 = x1,
                 Y1 = y1,
                 X2 = x2,
-                Y2 = y2
+                Y2 = y2,
+                Matrix = new double[16]
             };
+
             GL.GetDouble(GetPName.ModelviewMatrix, clipStack[sp].Matrix);
 
             GL.StencilFunc(StencilFunction.Equal, sp, 0xFF);
@@ -696,7 +690,7 @@ namespace LiquidPlayer.Sprockets
             clipStackPointer = sp;
         }
 
-        public static void CleanClipStack(int objectId)
+        public static void CleanClipStack()
         {
             if (clipStackPointer != 0)
             {
@@ -726,7 +720,7 @@ namespace LiquidPlayer.Sprockets
 
         public static void Translate(int x, int y)
         {
-            GL.Translate(x, y, 0f);
+            GL.Translate(x, y, 0d);
         }
 
         public static void Translate(double x, double y, double z)
@@ -766,6 +760,7 @@ namespace LiquidPlayer.Sprockets
             if (matrixStackPointer != 0)
             {
                 var matrix = new double[15];
+
                 GL.GetDouble(GetPName.ModelviewMatrix, matrix);
 
                 while (matrixStackPointer != 0)
@@ -809,7 +804,7 @@ namespace LiquidPlayer.Sprockets
         public static void Plot(int x, int y)
         {
             GL.Begin(PrimitiveType.Points);
-            GL.Vertex2(x + 0.375f, y + 0.375f);
+            GL.Vertex2(x + 0.375d, y + 0.375d);
             GL.End();
         }
 
@@ -834,18 +829,18 @@ namespace LiquidPlayer.Sprockets
             }
 
             GL.Begin(PrimitiveType.Lines);
-            GL.Vertex2(x1 + 0.375f, y1 + 0.375f);
-            GL.Vertex2(x2 + 0.375f, y2 + 0.375f);
+            GL.Vertex2(x1 + 0.375d, y1 + 0.375d);
+            GL.Vertex2(x2 + 0.375d, y2 + 0.375d);
             GL.End();
         }
 
         public static void Rectangle(int x1, int y1, int x2, int y2)
         {
             GL.Begin(PrimitiveType.LineLoop);
-            GL.Vertex2(x1 + 0.375f, y1 + 0.375f);
-            GL.Vertex2(x1 + 0.375f, y2 + 0.375f);
-            GL.Vertex2(x2 + 0.375f, y2 + 0.375f);
-            GL.Vertex2(x2 + 0.375f, y1 + 0.375f);
+            GL.Vertex2(x1 + 0.375d, y1 + 0.375d);
+            GL.Vertex2(x1 + 0.375d, y2 + 0.375d);
+            GL.Vertex2(x2 + 0.375d, y2 + 0.375d);
+            GL.Vertex2(x2 + 0.375d, y1 + 0.375d);
             GL.End();
         }
 
@@ -872,36 +867,36 @@ namespace LiquidPlayer.Sprockets
             GL.End();
         }
 
-        public static void ThickFrame(int x1, int y1, int x2, int y2, Color.RGBA c1, Color.RGBA c2)
-        {
-            MixColor(c1.Uint);
+        //public static void ThickFrame(int x1, int y1, int x2, int y2, Color.RGBA c1, Color.RGBA c2)
+        //{
+        //    MixColor(c1.Uint);
 
-            GL.Begin(PrimitiveType.LineStrip);
-            GL.Vertex2(x1 + 0.375f, y2 + 0.375f);
-            GL.Vertex2(x1 + 0.375f, y1 + 0.375f);
-            GL.Vertex2(x2 + 1.375f, y1 + 0.375f);
-            GL.End();
+        //    GL.Begin(PrimitiveType.LineStrip);
+        //    GL.Vertex2(x1 + 0.375d, y2 + 0.375d);
+        //    GL.Vertex2(x1 + 0.375d, y1 + 0.375d);
+        //    GL.Vertex2(x2 + 1.375d, y1 + 0.375d);
+        //    GL.End();
 
-            GL.Begin(PrimitiveType.LineStrip);
-            GL.Vertex2(x1 + 1.375f, y2 - 0.625f);
-            GL.Vertex2(x1 + 1.375f, y1 + 1.375f);
-            GL.Vertex2(x2 + 0.375f, y1 + 1.375f);
-            GL.End();
+        //    GL.Begin(PrimitiveType.LineStrip);
+        //    GL.Vertex2(x1 + 1.375d, y2 - 0.625d);
+        //    GL.Vertex2(x1 + 1.375d, y1 + 1.375d);
+        //    GL.Vertex2(x2 + 0.375d, y1 + 1.375d);
+        //    GL.End();
 
-            MixColor(c2.Uint);
+        //    MixColor(c2.Uint);
 
-            GL.Begin(PrimitiveType.LineStrip);
-            GL.Vertex2(x2 + 0.375f, y1 + 1.375f);
-            GL.Vertex2(x2 + 0.375f, y2 + 0.375f);
-            GL.Vertex2(x1 + 0.375f, y2 + 0.375f);
-            GL.End();
+        //    GL.Begin(PrimitiveType.LineStrip);
+        //    GL.Vertex2(x2 + 0.375d, y1 + 1.375d);
+        //    GL.Vertex2(x2 + 0.375d, y2 + 0.375d);
+        //    GL.Vertex2(x1 + 0.375d, y2 + 0.375d);
+        //    GL.End();
 
-            GL.Begin(PrimitiveType.LineStrip);
-            GL.Vertex2(x2 - 0.625f, y1 + 2.375f);
-            GL.Vertex2(x2 - 0.625f, y2 - 0.625f);
-            GL.Vertex2(x1 + 1.375f, y2 - 0.625f);
-            GL.End();
-        }
+        //    GL.Begin(PrimitiveType.LineStrip);
+        //    GL.Vertex2(x2 - 0.625d, y1 + 2.375d);
+        //    GL.Vertex2(x2 - 0.625d, y2 - 0.625d);
+        //    GL.Vertex2(x1 + 1.375d, y2 - 0.625d);
+        //    GL.End();
+        //}
 
         public static void Circle(double cx, double cy, double radius, int numSegments = 72)
         {
@@ -915,7 +910,7 @@ namespace LiquidPlayer.Sprockets
 
         public static void Ellipse(double cx, double cy, double xRadius, double yRadius, int numSegments = 72)
         {
-            var twicePi = 2 * 3.1415926;
+            var twicePi = 2 * System.Math.PI;
 
             GL.Begin(PrimitiveType.LineLoop);
 
@@ -932,7 +927,7 @@ namespace LiquidPlayer.Sprockets
 
         public static void EllipseFill(double cx, double cy, double xRadius, double yRadius, int numSegments = 72)
         {
-            var twicePi = 2 * 3.1415926;
+            var twicePi = 2 * System.Math.PI;
 
             GL.Begin(PrimitiveType.TriangleFan);
             GL.Vertex2(cx, cy);
@@ -989,19 +984,24 @@ namespace LiquidPlayer.Sprockets
             GL.Begin(mode);
         }
 
-        public static void End()
-        {
-            GL.End();
-        }
-
         public static void Vertex(double x, double y, double z)
         {
             GL.Vertex3(x, y, z);
         }
 
+        public static void Normal(double x, double y, double z)
+        {
+            GL.Normal3(x, y, z);
+        }
+
         public static void TexCoord(double x, double y)
         {
             GL.TexCoord2(x, y);
+        }
+
+        public static void End()
+        {
+            GL.End();
         }
 
         // Textures
@@ -1019,44 +1019,34 @@ namespace LiquidPlayer.Sprockets
 
         public static void BindTexture(int handle, int width, int height, uint[] data, bool linearFilter = false)
         {
-            GL.Enable(EnableCap.Texture2D);
-            GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (float)TextureEnvMode.Modulate);
             GL.BindTexture(TextureTarget.Texture2D, handle);
 
             if (linearFilter)
             {
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMinFilter.Linear);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMagFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMagFilter.Linear);
             }
             else
             {
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMinFilter.Nearest);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMagFilter.Nearest);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Nearest);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMagFilter.Nearest);
             }
 
             GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, data);
-
-            GL.Disable(EnableCap.Texture2D);
         }
 
         public static void UpdateTexture(int handle, int width, int height, uint[] data)
         {
-            GL.Enable(EnableCap.Texture2D);
             GL.BindTexture(TextureTarget.Texture2D, handle);
-            GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, width, height, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, OpenTK.Graphics.OpenGL.PixelType.UnsignedByte, data);
-            GL.Disable(EnableCap.Texture2D);
+
+            GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, width, height, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, data);
         }
 
         public static void TextureMap(int handle)
         {
             GL.Enable(EnableCap.Texture2D);
-            GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (float)TextureEnvMode.Modulate);
+            GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (int)TextureEnvMode.Modulate);
             GL.BindTexture(TextureTarget.Texture2D, handle);
-        }
-
-        public static void NoTextureMap()
-        {
-            GL.Disable(EnableCap.Texture2D);
         }
 
         public static void RenderTexture(int handle, int x1, int y1, int x2, int y2)
@@ -1080,16 +1070,21 @@ namespace LiquidPlayer.Sprockets
             }
 
             GL.Enable(EnableCap.Texture2D);
-            GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (float)TextureEnvMode.Modulate);
+            GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (int)TextureEnvMode.Modulate);
             GL.BindTexture(TextureTarget.Texture2D, handle);
 
             GL.Begin(PrimitiveType.Quads);
-            GL.TexCoord2(0f, 0f); GL.Vertex2(x1, y1);
-            GL.TexCoord2(0f, 1f); GL.Vertex2(x1, y2);
-            GL.TexCoord2(1f, 1f); GL.Vertex2(x2, y2);
-            GL.TexCoord2(1f, 0f); GL.Vertex2(x2, y1);
+            GL.TexCoord2(0d, 1d); GL.Vertex2(x1, y1);
+            GL.TexCoord2(0d, 0d); GL.Vertex2(x1, y2);
+            GL.TexCoord2(1d, 0d); GL.Vertex2(x2, y2);
+            GL.TexCoord2(1d, 1d); GL.Vertex2(x2, y1);
             GL.End();
 
+            GL.Disable(EnableCap.Texture2D);
+        }
+
+        public static void NoTextureMap()
+        {
             GL.Disable(EnableCap.Texture2D);
         }
 
@@ -1100,25 +1095,28 @@ namespace LiquidPlayer.Sprockets
 
         // Images
 
-        public static uint[] LoadImage(string fileName, out int width, out int height)
+        public static uint[] LoadImage(string path, out int width, out int height)
         {
             width = 0;
             height = 0;
 
-            using (var bmp = new Bitmap(fileName))
+            using (var bmp = new Bitmap(path))
             {
                 width = bmp.Width;
                 height = bmp.Height;
 
-                var bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                bmp.RotateFlip(RotateFlipType.Rotate180FlipX);
+
+                var bmpData = bmp.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
                 var ptr = bmpData.Scan0;
 
                 var tempSize = System.Math.Abs(bmpData.Stride) * bmp.Height;
                 var temp = new byte[tempSize];
-                System.Runtime.InteropServices.Marshal.Copy(bmpData.Scan0, temp, 0, tempSize);
+                Marshal.Copy(bmpData.Scan0, temp, 0, tempSize);
 
                 bmp.UnlockBits(bmpData);
+
 
                 var size = width * height;
                 var data = new uint[size];
@@ -1135,6 +1133,7 @@ namespace LiquidPlayer.Sprockets
                     data[index] = r | (uint)g << 8 | (uint)b << 16 | (uint)a << 24;
                 }
 
+
                 return data;
             }
         }
@@ -1145,6 +1144,68 @@ namespace LiquidPlayer.Sprockets
         {
             return GL.GenLists(range);
         }
+
+        public static void PrintLists(int list, int x, int y, int ch)
+        {
+            GL.Disable(EnableCap.Multisample);
+
+            GL.Enable(EnableCap.Texture2D);
+            GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (int)TextureEnvMode.Modulate); 
+
+            GL.PushMatrix();
+            GL.Translate(x, y, 0d);
+            GL.CallList(list + ch);
+            GL.PopMatrix();
+
+            GL.Disable(EnableCap.Texture2D);
+
+            GL.Enable(EnableCap.Multisample);
+        }
+
+        public static void PrintLists(int list, int x, int y, string caption)
+        {
+            var length = caption.Length;
+
+            if (length == 0)
+            {
+                return;
+            }
+
+            var lists = Encoding.ASCII.GetBytes(caption);
+
+            GL.Disable(EnableCap.Multisample);
+
+            GL.Enable(EnableCap.Texture2D);
+            GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (int)TextureEnvMode.Modulate);
+
+            GL.PushAttrib(AttribMask.ListBit);
+            GL.ListBase(list);
+            GL.PushMatrix();
+            GL.Translate(x, y, 0d);
+            GL.CallLists(length, ListNameType.UnsignedByte, lists);
+            GL.PopMatrix();
+            GL.PopAttrib();
+
+            GL.Disable(EnableCap.Texture2D);
+
+            GL.Enable(EnableCap.Multisample);
+        }
+
+        public static void PrintLists(int list, int x, int y, string text, uint foregroundColor = 0xFFFFFFFF, uint backgroundColor = 0xFF000000)
+        {
+            SetColor(backgroundColor);
+            PrintLists(list, x + 1, y + 1, text);
+
+            SetColor(foregroundColor);
+            PrintLists(list, x, y, text);
+        }
+
+        public static void FreeLists(int list, int range)
+        {
+            GL.DeleteLists(list, range);
+        }
+
+        // Tiles
 
         public static void CreateTile(int list, int handle, int x1, int y1, int x2, int y2, int bitmapWidth, int bitmapHeight, int glyphWidth, int glyphHeight)
         {
@@ -1158,78 +1219,34 @@ namespace LiquidPlayer.Sprockets
                 Util.Swap(ref y1, ref y2);
             }
 
-            // Necessary fix?! (re: rotate text 225 degrees or 315 degrees)
-            //x1++;
-            //y1++;
-
-            var tx1 = (float)x1 / bitmapWidth;
-            var ty1 = (float)y1 / bitmapHeight;
-            var tx2 = (float)x2 / bitmapWidth;
-            var ty2 = (float)y2 / bitmapHeight;
+            var tx1 = (double)x1 / bitmapWidth;
+            var ty1 = (double)y1 / bitmapHeight;
+            var tx2 = (double)x2 / bitmapWidth;
+            var ty2 = (double)y2 / bitmapHeight;
 
             GL.NewList(list, ListMode.Compile);
 
             GL.BindTexture(TextureTarget.Texture2D, handle);
 
             GL.Begin(PrimitiveType.Quads);
-            GL.TexCoord2(tx1, ty1); GL.Vertex2(0, 0);
-            GL.TexCoord2(tx2, ty1); GL.Vertex2(glyphWidth, 0);
-            GL.TexCoord2(tx2, ty2); GL.Vertex2(glyphWidth, glyphHeight);
-            GL.TexCoord2(tx1, ty2); GL.Vertex2(0, glyphHeight);
+            GL.TexCoord2(tx1, 1d - ty1); GL.Vertex2(0, 0);
+            GL.TexCoord2(tx2, 1d - ty1); GL.Vertex2(glyphWidth, 0);
+            GL.TexCoord2(tx2, 1d - ty2); GL.Vertex2(glyphWidth, glyphHeight);
+            GL.TexCoord2(tx1, 1d - ty2); GL.Vertex2(0, glyphHeight);
             GL.End();
 
-            GL.Translate(glyphWidth, 0f, 0f);
+            GL.Translate(glyphWidth, 0d, 0d);
 
             GL.EndList();
         }
 
-        public static void Print(int list, int x, int y, int ch)
-        {
-            GL.Enable(EnableCap.Texture2D);
-            GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, 8448); // GL_MODULATE = 8448
-            GL.PushMatrix();
-            GL.Translate(x, y, 0f);
-            GL.CallList(list + ch);
-            GL.PopMatrix();
-            GL.Disable(EnableCap.Texture2D);
-        }
-
-        public static void Print(int list, int x, int y, string text)
-        {
-            var length = text.Length;
-
-            if (length == 0)
-            {
-                return;
-            }
-
-            var lists = Encoding.ASCII.GetBytes(text);
-
-            GL.Enable(EnableCap.Texture2D);
-            GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, 8448); // GL_MODULATE = 8448
-            GL.PushAttrib(AttribMask.ListBit);
-            GL.ListBase(list);
-            GL.PushMatrix();
-            GL.Translate(x, y, 0f);
-            GL.CallLists(length, ListNameType.UnsignedByte, lists);
-            GL.PopMatrix();
-            GL.PopAttrib();
-            GL.Disable(EnableCap.Texture2D);
-        }
-
-        public static void PrintShadow(int list, int x, int y, string text, uint foregroundColor = 0xFFFFFFFF, uint backgroundColor = 0xFF000000)
-        {
-            SetColor(backgroundColor);
-            Print(list, x + 1, y + 1, text);
-
-            SetColor(foregroundColor);
-            Print(list, x, y, text);
-        }
-
         public static void RenderConsole(int list, int width, int height, int characterWidth, int characterHeight, byte[] screenData, uint[] colorData, int[] attributeData, int rasterX, int rasterY, bool blink)
         {
+            GL.Disable(EnableCap.Multisample);
+
             GL.Enable(EnableCap.Texture2D);
-            GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, 8448); // GL_MODULATE = 8448
+            GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (int)TextureEnvMode.Modulate);
+
             GL.PushAttrib(AttribMask.ListBit);
             GL.ListBase(list);
 
@@ -1239,7 +1256,7 @@ namespace LiquidPlayer.Sprockets
                 var length = width;
 
                 GL.PushMatrix();
-                GL.Translate(rasterX, rasterY, 0f);
+                GL.Translate(rasterX, rasterY, 0d);
 
                 do
                 {
@@ -1259,7 +1276,7 @@ namespace LiquidPlayer.Sprockets
 
                     if (inkColor >> 24 == 0)
                     {
-                        GL.Translate(count * characterWidth, 0f, 0f);
+                        GL.Translate(count * characterWidth, 0d, 0d);
                     }
                     else
                     {
@@ -1279,7 +1296,7 @@ namespace LiquidPlayer.Sprockets
                             case ConsoleAttribute.Blink:
                                 if (blink)
                                 {
-                                    GL.Translate(count * characterWidth, 0f, 0f);
+                                    GL.Translate(count * characterWidth, 0d, 0d);
                                 }
                                 else
                                 {
@@ -1288,13 +1305,13 @@ namespace LiquidPlayer.Sprockets
                                 }
                                 break;
                             case ConsoleAttribute.Bold:
-                                MixColor(Sprockets.Color.Lighten(inkColor, 0.5f));
+                                MixColor(Color.Lighten(inkColor, 0.5f));
                                 GL.CallLists(count, ListNameType.UnsignedByte, lists);
                                 break;
                             case ConsoleAttribute.BlinkBold:
                                 if (blink)
                                 {
-                                    MixColor(Sprockets.Color.Lighten(inkColor, 0.5f));
+                                    MixColor(Color.Lighten(inkColor, 0.5f));
                                     GL.CallLists(count, ListNameType.UnsignedByte, lists);
                                 }
                                 else
@@ -1326,7 +1343,7 @@ namespace LiquidPlayer.Sprockets
                                 }
                                 break;
                             case ConsoleAttribute.BoldUnderline:
-                                MixColor(Sprockets.Color.Lighten(inkColor, 0.5f));
+                                MixColor(Color.Lighten(inkColor, 0.5f));
                                 GL.Disable(EnableCap.Texture2D);
                                 Line(0, characterHeight - 1, count * characterWidth - 1, characterHeight - 1);
                                 GL.Enable(EnableCap.Texture2D);
@@ -1335,7 +1352,7 @@ namespace LiquidPlayer.Sprockets
                             case ConsoleAttribute.BlinkBoldUnderline:
                                 if (blink)
                                 {
-                                    MixColor(Sprockets.Color.Lighten(inkColor, 0.5f));
+                                    MixColor(Color.Lighten(inkColor, 0.5f));
                                     GL.Disable(EnableCap.Texture2D);
                                     Line(0, characterHeight - 1, count * characterWidth - 1, characterHeight - 1);
                                     GL.Enable(EnableCap.Texture2D);
@@ -1348,7 +1365,7 @@ namespace LiquidPlayer.Sprockets
                                 }
                                 break;
                             default:
-                                GL.Translate(count * characterWidth, 0f, 0f);
+                                GL.Translate(count * characterWidth, 0d, 0d);
                                 break;
                         }
                     }
@@ -1362,12 +1379,17 @@ namespace LiquidPlayer.Sprockets
             GL.PopAttrib();
 
             GL.Disable(EnableCap.Texture2D);
+
+            GL.Enable(EnableCap.Multisample);
         }
 
         public static void RenderTileMap(int list, int width, int height, int characterWidth, int characterHeight, byte[] screenData, uint[] colorData, int rasterX, int rasterY)
         {
+            GL.Disable(EnableCap.Multisample);
+
             GL.Enable(EnableCap.Texture2D);
-            GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, 8448); // GL_MODULATE = 8448
+            GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (int)TextureEnvMode.Modulate);
+
             GL.PushAttrib(AttribMask.ListBit);
             GL.ListBase(list);
 
@@ -1377,7 +1399,7 @@ namespace LiquidPlayer.Sprockets
                 var length = width;
 
                 GL.PushMatrix();
-                GL.Translate(rasterX, rasterY, 0f);
+                GL.Translate(rasterX, rasterY, 0d);
 
                 do
                 {
@@ -1396,7 +1418,7 @@ namespace LiquidPlayer.Sprockets
 
                     if (inkColor >> 24 == 0)
                     {
-                        GL.Translate(count * characterWidth, 0f, 0f);
+                        GL.Translate(count * characterWidth, 0d, 0d);
                     }
                     else
                     {
@@ -1420,190 +1442,119 @@ namespace LiquidPlayer.Sprockets
             GL.PopAttrib();
 
             GL.Disable(EnableCap.Texture2D);
-        }
 
-        public static void FreeLists(int list, int range)
-        {
-            GL.DeleteLists(list, range);
+            GL.Enable(EnableCap.Multisample);
         }
 
         // Fonts
 
-        public static uint[] BuildMonoSpacedFont(string fontName, float fontSize, FontStyle fontStyle, out int charWidth, out int charHeight, out int width, out int height)
+        public static void BuildFont(string path, int fontSize, bool linearFilter, out Dictionary<int, Character> characters)
         {
-            charWidth = 0;
-            charHeight = 0;
+            characters = new Dictionary<int, Character>();
 
-            width = 0;
-            height = 0;
-
-            var font = new Font(new FontFamily(fontName), fontSize, fontStyle);
-
-            using (var graphics = System.Drawing.Graphics.FromImage(new Bitmap(1, 1)))
+            using (var ft = new SharpFont.Library())
             {
-                var c = (char)33;
-
-                var charSize = graphics.MeasureString(c.ToString(), font);
-
-                charWidth = (int)charSize.Width;
-                charHeight = (int)charSize.Height;
-
-                for (var ch = 33; ch < 128; ch++)
+                using (var face = ft.NewFace(path, 0))
                 {
-                    c = (char)ch;
+                    face.SetPixelSizes(0, (uint)fontSize);
 
-                    charSize = graphics.MeasureString(c.ToString(), font);
+                    GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
 
-                    if ((int)charSize.Width != charWidth || (int)charSize.Height != charHeight)
+                    for (var c = 0; c < 128; c++)
                     {
-                        return null;
-                    }
-                }
-            }
+                        face.LoadChar((uint)c, SharpFont.LoadFlags.Render, SharpFont.LoadTarget.Normal);
 
-            var atlasOffsetX = -3;
-            var atlasOffsetY = -1;
+                        var textureId = GL.GenTexture();
 
-            using (var bmp = new Bitmap(charWidth * 16, charHeight * 16, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
-            {
-                width = bmp.Width;
-                height = bmp.Height;
+                        GL.BindTexture(TextureTarget.Texture2D, textureId);
 
-                using (var graphics = System.Drawing.Graphics.FromImage(bmp))
-                {
-                    graphics.SmoothingMode = SmoothingMode.HighQuality;
-                    graphics.TextContrast = 4;
-                    graphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+                        var width = face.Glyph.Bitmap.Width;
+                        var height = face.Glyph.Bitmap.Rows;
 
-                    for (var y = 0; y < 16; y++)
-                    {
-                        for (var x = 0; x < 16; x++)
+                        var size = width * height;
+
+                        uint[] data = null;
+
+                        if (size != 0)
                         {
-                            var c = (char)(x + y * 16);
+                            var managedArray = new byte[size];
 
-                            graphics.DrawString(c.ToString(), font, Brushes.White, x * charWidth + atlasOffsetX, y * charHeight + atlasOffsetY);
+                            Marshal.Copy(face.Glyph.Bitmap.Buffer, managedArray, 0, size);
+
+
+                            data = new uint[size];
+
+                            for (var index = 0; index < size; index++)
+                            {
+                                data[index] = 255 | (uint)255 << 8 | (uint)255 << 16 | (uint)managedArray[index] << 24;
+                            }
+
+
+                            if (linearFilter)
+                            {
+                                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Linear);
+                                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMagFilter.Linear);
+                            }
+                            else
+                            {
+                                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Nearest);
+                                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMagFilter.Nearest);
+                            }
+
+                            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, data);
                         }
+
+                        var advance = face.Glyph.Advance.X.Round();
+
+                        var character = new Character
+                        {
+                            TextureId = textureId,
+                            Size = new IVector2(width, face.Glyph.Bitmap.Rows),
+                            Bearing = new IVector2(face.Glyph.BitmapLeft, face.Glyph.BitmapTop),
+                            Advance = advance,
+                            Data = data
+                        };
+
+                        characters[c] = character;
                     }
-
-                    var bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-                    var ptr = bmpData.Scan0;
-
-                    var tempSize = System.Math.Abs(bmpData.Stride) * bmp.Height;
-                    var temp = new byte[tempSize];
-                    System.Runtime.InteropServices.Marshal.Copy(bmpData.Scan0, temp, 0, tempSize);
-
-                    bmp.UnlockBits(bmpData);
-
-                    var size = width * height;
-                    var data = new uint[size];
-
-                    var p = 0;
-
-                    for (var index = 0; index < size; index++, p += 4)
-                    {
-                        var b = temp[p];
-                        var g = temp[p + 1];
-                        var r = temp[p + 2];
-                        var a = temp[p + 3];
-
-                        var grayScale = (byte)(r * 0.299f + g * 0.587f + b * 0.114f);
-
-                        data[index] = 255 | (uint)255 << 8 | (uint)255 << 16 | (uint)grayScale << 24;
-                    }
-
-                    return data;
                 }
             }
         }
 
-        public static void DrawMonoSpacedText(int handle, int x, int y, string text, int charWidth, int charHeight, int width, int height)
+        public static void RenderText(Dictionary<int, Character> characters, int x, int y, string text, int letterSpacing = 0)
         {
+            GL.Disable(EnableCap.Multisample);
+
             GL.Enable(EnableCap.Texture2D);
-            GL.BindTexture(TextureTarget.Texture2D, handle);
+            GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (int)TextureEnvMode.Modulate);
 
-            GL.Begin(PrimitiveType.Quads);
-
-            var uStep = (float)charWidth / width;
-            var vStep = (float)charHeight / height;
-
-            for (var n = 0; n < text.Length; n++)
+            foreach (var c in text)
             {
-                var idx = text[n];
-                var u = idx % 16 * uStep;
-                var v = idx / 16 * vStep;
+                var ch = characters[c];
 
-                GL.TexCoord2(u, v);
-                GL.Vertex2(x, y);
-                GL.TexCoord2(u + uStep, v);
-                GL.Vertex2(x + charWidth, y);
-                GL.TexCoord2(u + uStep, v + vStep);
-                GL.Vertex2(x + charWidth, y + charHeight);
-                GL.TexCoord2(u, v + vStep);
-                GL.Vertex2(x, y + charHeight);
+                var xPos = x + ch.Bearing.X;
+                var yPos = y + (characters['H'].Bearing.Y - ch.Bearing.Y);
 
-                x += charWidth;
+                var w = ch.Size.X;
+                var h = ch.Size.Y;
+
+                GL.BindTexture(TextureTarget.Texture2D, ch.TextureId);
+
+                GL.Begin(PrimitiveType.Quads);
+
+                GL.TexCoord2(0d, 0d); GL.Vertex2(xPos + 0, yPos + 0);
+                GL.TexCoord2(1d, 0d); GL.Vertex2(xPos + w, yPos + 0);
+                GL.TexCoord2(1d, 1d); GL.Vertex2(xPos + w, yPos + h);
+                GL.TexCoord2(0d, 1d); GL.Vertex2(xPos + 0, yPos + h);
+
+                GL.End();
+
+                x += ch.Advance + letterSpacing;
             }
-
-            GL.End();
 
             GL.Disable(EnableCap.Texture2D);
-        }
 
-        public static uint[] BuildBanner(string fontName, float fontSize, FontStyle fontStyle, string caption, out int width, out int height)
-        {
-            width = 0;
-            height = 0;
-
-            var font = new Font(new FontFamily(fontName), fontSize, fontStyle);
-
-            using (var graphics = System.Drawing.Graphics.FromImage(new Bitmap(1, 1)))
-            {
-                var stringSize = graphics.MeasureString(caption, font);
-
-                width = (int)stringSize.Width;
-                height = (int)stringSize.Height;
-            }
-
-            using (var bmp = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
-            {
-                using (var graphics = System.Drawing.Graphics.FromImage(bmp))
-                {
-                    graphics.SmoothingMode = SmoothingMode.HighQuality;
-                    graphics.TextContrast = 4;
-                    graphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
-
-                    graphics.DrawString(caption, font, Brushes.White, 0, 0);
-
-                    var bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-                    var ptr = bmpData.Scan0;
-
-                    var tempSize = System.Math.Abs(bmpData.Stride) * bmp.Height;
-                    var temp = new byte[tempSize];
-                    System.Runtime.InteropServices.Marshal.Copy(bmpData.Scan0, temp, 0, tempSize);
-
-                    bmp.UnlockBits(bmpData);
-
-                    var size = width * height;
-                    var data = new uint[size];
-
-                    var p = 0;
-                    for (var index = 0; index < size; index++, p += 4)
-                    {
-                        var b = temp[p];
-                        var g = temp[p + 1];
-                        var r = temp[p + 2];
-                        var a = temp[p + 3];
-
-                        var grayScale = (byte)(r * 0.299f + g * 0.587f + b * 0.114f);
-
-                        data[index] = 255 | (uint)255 << 8 | (uint)255 << 16 | (uint)grayScale << 24;
-                    }
-
-                    return data;
-                }
-            }
+            GL.Enable(EnableCap.Multisample);
         }
 
         // Read
@@ -1641,7 +1592,7 @@ namespace LiquidPlayer.Sprockets
             var fboTexture = 0;
 
 
-            GL.GenRenderbuffers(1, out fboDepth);
+            fboDepth = GL.GenRenderbuffer();
 
             GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, fboDepth);
 
@@ -1650,7 +1601,7 @@ namespace LiquidPlayer.Sprockets
             GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, 0);
 
 
-            GL.GenTextures(1, out fboTexture);
+            fboTexture = GL.GenTexture();
 
             GL.BindTexture(TextureTarget.Texture2D, fboTexture);
 
@@ -1658,16 +1609,17 @@ namespace LiquidPlayer.Sprockets
 
             if (linearFilter)
             {
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMinFilter.Linear);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMagFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMagFilter.Linear);
             }
             else
             {
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMinFilter.Nearest);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMagFilter.Nearest);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Nearest);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMagFilter.Nearest);
             }
 
-            GL.GenFramebuffers(1, out fbo);
+
+            fbo = GL.GenFramebuffer();
 
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo);
 
@@ -1688,7 +1640,7 @@ namespace LiquidPlayer.Sprockets
 
             var error = GetError();
 
-            System.Diagnostics.Debug.Assert(error == ErrorCode.NoError);
+            System.Diagnostics.Debug.Assert(error == OpenTK.Graphics.OpenGL.ErrorCode.NoError);
 
 
             frameBuffer.Fbo = fbo;
@@ -1771,17 +1723,11 @@ namespace LiquidPlayer.Sprockets
 
         public static void FreeFrameBuffer(FrameBuffer frameBuffer)
         {
-            GL.DeleteFramebuffers(1, ref frameBuffer.Fbo);
+            GL.DeleteFramebuffer(frameBuffer.Fbo);
 
-            GL.DeleteRenderbuffers(1, ref frameBuffer.FboDepth);
+            GL.DeleteRenderbuffer(frameBuffer.FboDepth);
 
-            GL.DeleteTextures(1, ref frameBuffer.FboTexture);
-
-            //GL.DeleteFramebuffer(frameBuffer.Fbo);
-
-            //GL.DeleteRenderbuffer(frameBuffer.FboDepth);
-
-            //GL.DeleteTexture(frameBuffer.FboTexture);
+            GL.DeleteTexture(frameBuffer.FboTexture);
         }
     }
 }

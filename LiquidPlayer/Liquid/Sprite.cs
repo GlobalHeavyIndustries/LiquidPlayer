@@ -62,7 +62,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -80,7 +80,7 @@ namespace LiquidPlayer.Liquid
         {
             if (bitmapId == 0)
             {
-                Throw(ExceptionCode.NullObject);
+                RaiseError(ErrorCode.NullObject);
                 return;
             }
 
@@ -102,13 +102,13 @@ namespace LiquidPlayer.Liquid
         {
             if (direction < 0f || direction >= 360f)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
 
             if (speed < 0f || speed >= 15f)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
 

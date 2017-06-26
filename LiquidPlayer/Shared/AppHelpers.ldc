@@ -1,0 +1,35 @@
+include once "ProgInfo.ldc"
+
+int elapsedTime, lastTime
+
+function BeLoop()
+{
+    var demoStart = Clock.GetSystem()
+
+    do
+    {
+        while (!IsMessageQueueEmpty())
+        {
+            var message = DequeueMessage()
+            
+            if (message.GetBody() == MESSAGE_KEYDOWN && int(message.GetData()) == KEY_ESC)
+            {
+				break do
+			}
+			else
+			{
+				message.Dispatch()
+			}
+        }
+        
+        Be()
+
+        lastTime = elapsedTime
+        elapsedTime = Clock.GetSystem() - demoStart
+        elapsedTime = (lastTime + elapsedTime) / 2
+
+		//Debugger.Watch(0, demoStart)
+		//Debugger.Watch(1, lastTime)
+		//Debugger.Watch(2, elapsedTime)
+    }
+}

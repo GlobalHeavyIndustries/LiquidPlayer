@@ -8,16 +8,16 @@ namespace LiquidPlayer.Liquid
 {
     public class FileStream : Stream
     {
-        protected string fileName;
+        protected string path;
         protected System.IO.FileStream fileStream;
 
-        public static int NewFileStream(string fileName, int parentId = 0)
+        public static int NewFileStream(string path, int parentId = 0)
         {
             var id = LiquidPlayer.Program.Exec.ObjectManager.New(LiquidClass.FileStream);
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -25,19 +25,19 @@ namespace LiquidPlayer.Liquid
                 LiquidPlayer.Program.Exec.ObjectManager.Hook(id, parentId);
             }
 
-            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new FileStream(id, fileName);
+            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new FileStream(id, path);
 
             return id;
         }
 
-        public FileStream(int id, string fileName)
+        public FileStream(int id, string path)
             : base(id)
         {
             this.canRead = true;
             this.canSeek = true;
             this.canWrite = true;
 
-            this.fileName = fileName;
+            this.path = path;
             this.fileStream = null;
 
             this.length = 0;
@@ -46,14 +46,14 @@ namespace LiquidPlayer.Liquid
 
         public override string ToString()
         {
-            return $"FileStream (Filename: \"{fileName}\", Position: {position}, Length: {length})";
+            return $"FileStream (Path: \"{path}\", Position: {position}, Length: {length})";
         }
 
         public override void Close()
         {
             base.Close();
 
-            if (IsError())
+            if (IsErrorRaised())
             {
                 return;
             }
@@ -70,19 +70,19 @@ namespace LiquidPlayer.Liquid
         {
             base.EndOfStream();
 
-            if (IsError())
+            if (IsErrorRaised())
             {
                 return false;
             }
 
-            return (position >= length) ? true : false;
+            return (position >= length);
         }
 
         public override void Flush()
         {
             base.Flush();
 
-            if (IsError())
+            if (IsErrorRaised())
             {
                 return;
             }
@@ -97,12 +97,12 @@ namespace LiquidPlayer.Liquid
         {
             base.Open();
 
-            if (IsError())
+            if (IsErrorRaised())
             {
                 return;
             }
 
-            fileStream = System.IO.File.Open(fileName, System.IO.FileMode.OpenOrCreate);
+            fileStream = System.IO.File.Open(path, System.IO.FileMode.OpenOrCreate);
 
             length = (int)fileStream.Length;
 
@@ -113,7 +113,7 @@ namespace LiquidPlayer.Liquid
         {
             base.Read();
 
-            if (IsError())
+            if (IsErrorRaised())
             {
                 return 0;
             }
@@ -134,7 +134,7 @@ namespace LiquidPlayer.Liquid
         {
             base.Read(count);
 
-            if (IsError())
+            if (IsErrorRaised())
             {
                 return "";
             }
@@ -155,7 +155,7 @@ namespace LiquidPlayer.Liquid
         {
             base.Seek(position);
 
-            if (IsError())
+            if (IsErrorRaised())
             {
                 return;
             }
@@ -167,7 +167,7 @@ namespace LiquidPlayer.Liquid
         {
             base.SetLength(length);
 
-            if (IsError())
+            if (IsErrorRaised())
             {
                 return;
             }
@@ -179,7 +179,7 @@ namespace LiquidPlayer.Liquid
         {
             base.Write(data);
 
-            if (IsError())
+            if (IsErrorRaised())
             {
                 return;
             }

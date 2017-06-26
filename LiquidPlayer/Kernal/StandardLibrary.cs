@@ -12,198 +12,12 @@ namespace LiquidPlayer.Kernal
 
         private Dictionary<string, FunctionDelegate> stubs = new Dictionary<string, FunctionDelegate>();
 
-        public void Load(ClassManager classManager)
-        {
-            this.classManager = classManager;
-
-            initClasses();
-
-            bindObject();
-            bindMessage();
-            bindException();
-            bindCollection();
-            bindArray();
-            bindMatrix();
-            bindDictionary();
-            bindStack();
-            bindQueue();
-            bindList();
-            bindCommandLine();
-            bindFileSystem();
-            bindFile();
-            bindInternet();
-            bindStream();
-            bindDataStream();
-            bindFileStream();
-            bindPipe();
-            bindTextReader();
-            bindTextWriter();
-            bindKeyboard();
-            bindMouse();
-            bindOrtho();
-            bindPerspective();
-            bindEntity();
-            bindGEL();
-            bindGEL3D();
-            bindTask();
-            bindProgram();
-            bindApp();
-            bindApplet();
-            bindClock();
-            bindMath();
-            bindRandom();
-            bindRegularExpression();
-            bindColor();
-            bindBitmap();
-            bindImage();
-            bindTexture();
-            bindBanner();
-            bindBrush();
-            bindPen();
-            bindTurtle();
-            bindFilter();
-            bindFont();
-            bindCharacterSet();         // extends Font, add WindowsFont
-            bindMonoSpacedFont();
-            bindView();
-            bindConsole();
-            bindTileMap();
-            bindCopperBars();
-            bindCanvas();
-            bindFBO();
-            bindFBO3D();
-            bindSprite();
-            bindText();
-            bindLayer();
-            bindAudio();
-            bindSound();
-            bindMusic();
-            bindVoice();
-
-            bindAPI();
-        }
-
-        public FunctionDelegate BindMethod(LiquidClass liquidClass, string methodTag, string parameters, LiquidClass returnLiquidClass, LiquidClass returnLiquidSubclass = LiquidClass.None)
-        {
-            var classTag = "";
-
-            var returnClassTag = "";
-
-            if (returnLiquidClass != LiquidClass.None)
-            {
-                returnClassTag = classManager.GetTag(returnLiquidClass, returnLiquidSubclass);
-            }
-
-            while (true)
-            {
-                classTag = classManager.GetTag(liquidClass);
-
-                var tag = (classTag + "|" + returnClassTag + ":" + methodTag + parameters);
-
-                if (stubs.ContainsKey(tag))
-                {
-                    return stubs[tag];
-                }
-
-                var baseClassId = classManager[liquidClass].BaseLiquidClass;
-
-                if (baseClassId == 0)
-                {
-                    break;
-                }
-
-                liquidClass = baseClassId;
-            }
-
-            return null;
-        }
-
-        public FunctionDelegate BindFunction(LiquidClass liquidClass, string functionTag, string parameters, LiquidClass returnLiquidClass, LiquidClass returnLiquidSubclass = LiquidClass.None)
-        {
-            var classTag = "";
-
-            var returnClassTag = "";
-
-            if (returnLiquidClass != LiquidClass.None)
-            {
-                returnClassTag = classManager.GetTag(returnLiquidClass, returnLiquidSubclass);
-            }
-
-            while (true)
-            {
-                classTag = classManager.GetTag(liquidClass);
-
-                var tag = (classTag + "|" + returnClassTag + ":" + functionTag + parameters);
-
-                if (stubs.ContainsKey(tag))
-                {
-                    return stubs[tag];
-                }
-
-                var baseClassId = classManager[liquidClass].BaseLiquidClass;
-
-                if (baseClassId == 0)
-                {
-                    break;
-                }
-
-                liquidClass = baseClassId;
-            }
-
-            return null;
-        }
-
-        private int addMethod(LiquidClass liquidClass, string methodTag, string parameters, LiquidClass returnLiquidClass, LiquidClass returnLiquidSubclass, FunctionDelegate stub)
-        {
-            var classTag = classManager.GetTag(liquidClass);
-
-            var returnClassTag = classManager.GetTag(returnLiquidClass, returnLiquidSubclass);
-
-            var tag = classTag + "|" + returnClassTag + ":" + methodTag + parameters;
-
-            stubs[tag] = stub;
-
-            return classManager.AddMethod(liquidClass, methodTag, parameters, new LiquidType(returnLiquidClass, returnLiquidSubclass), stub);
-        }
-
-        private int addVirtualMethod(LiquidClass liquidClass, string methodTag, string parameters, LiquidClass returnLiquidClass, LiquidClass returnLiquidSubclass, FunctionDelegate stub)
-        {
-            var classTag = classManager.GetTag(liquidClass);
-
-            var returnClassTag = classManager.GetTag(returnLiquidClass, returnLiquidSubclass);
-
-            var tag = classTag + "|" + returnClassTag + ":" + methodTag + parameters;
-
-            stubs[tag] = stub;
-
-            return classManager.AddVirtualMethod(liquidClass, methodTag, parameters, new LiquidType(returnLiquidClass, returnLiquidSubclass), stub);
-        }
-
-        private int addFunction(LiquidClass liquidClass, string functionTag, string parameters, LiquidClass returnLiquidClass, LiquidClass returnLiquidSubclass, FunctionDelegate stub)
-        {
-            var classTag = classManager.GetTag(liquidClass);
-
-            var returnClassTag = classManager.GetTag(returnLiquidClass, returnLiquidSubclass);
-
-            var tag = classTag + "|" + returnClassTag + ":" + functionTag + parameters;
-
-            stubs[tag] = stub;
-
-            if (classManager.IsBuiltInType(liquidClass))
-            {
-                return 0;
-            }
-            else
-            {
-                return classManager.AddFunction(liquidClass, functionTag, parameters, new LiquidType(returnLiquidClass, returnLiquidSubclass), stub);
-            }
-        }
-
         private void initClasses()
         {
             Program.ClassManager.New("Object");
+            Program.ClassManager.New("System");
+            Program.ClassManager.New("Debugger");
             Program.ClassManager.New("Message");
-            Program.ClassManager.New("Exception");
             Program.ClassManager.New("Collection");
             Program.ClassManager.New("Array");
             Program.ClassManager.New("Matrix");
@@ -240,28 +54,145 @@ namespace LiquidPlayer.Kernal
             Program.ClassManager.New("Bitmap");
             Program.ClassManager.New("Image");
             Program.ClassManager.New("Texture");
-            Program.ClassManager.New("Banner");
+            Program.ClassManager.New("Raster");
             Program.ClassManager.New("Brush");
             Program.ClassManager.New("Pen");
             Program.ClassManager.New("Turtle");
             Program.ClassManager.New("Filter");
-            Program.ClassManager.New("Font");
             Program.ClassManager.New("CharacterSet");
-            Program.ClassManager.New("MonoSpacedFont");
+            Program.ClassManager.New("Font");
             Program.ClassManager.New("View");
             Program.ClassManager.New("Console");
             Program.ClassManager.New("TileMap");
             Program.ClassManager.New("CopperBars");
             Program.ClassManager.New("Canvas");
-            Program.ClassManager.New("FBO");
-            Program.ClassManager.New("FBO3D");
             Program.ClassManager.New("Sprite");
+            Program.ClassManager.New("Tiles");
             Program.ClassManager.New("Text");
-            Program.ClassManager.New("Layer");
             Program.ClassManager.New("Audio");
             Program.ClassManager.New("Sound");
             Program.ClassManager.New("Music");
             Program.ClassManager.New("Voice");
+        }
+
+        public void Load(ClassManager classManager)
+        {
+            this.classManager = classManager;
+
+            initClasses();
+
+            bindObject();
+            bindSystem();
+            bindDebugger();
+            bindMessage();
+            bindCollection();
+            bindArray();
+            bindMatrix();
+            bindDictionary();
+            bindStack();
+            bindQueue();
+            bindList();
+            bindCommandLine();
+            bindFileSystem();
+            bindFile();
+            bindInternet();
+            bindStream();
+            bindDataStream();
+            bindFileStream();
+            bindPipe();
+            bindTextReader();
+            bindTextWriter();
+            bindKeyboard();
+            bindMouse();
+            bindOrtho();
+            bindPerspective();
+            bindEntity();
+            bindGEL();
+            bindGEL3D();
+            bindTask();
+            bindProgram();
+            bindApp();
+            bindApplet();
+            bindClock();
+            bindMath();
+            bindRandom();
+            bindRegularExpression();
+            bindColor();
+            bindBitmap();
+            bindImage();
+            bindTexture();
+            bindRaster();
+            bindBrush();
+            bindPen();
+            bindTurtle();
+            bindFilter();
+            bindCharacterSet();
+            bindFont();
+            bindView();
+            bindConsole();
+            bindTileMap();
+            bindCopperBars();
+            bindCanvas();
+            bindSprite();
+            bindTiles();
+            bindText();
+            bindAudio();
+            bindSound();
+            bindMusic();
+            bindVoice();
+
+            bindAPI();
+        }
+
+        public FunctionDelegate GetFunctionDelegate(string tag)
+        {
+            if (stubs.ContainsKey(tag))
+            {
+                return stubs[tag];
+            }
+
+            return null;
+        }
+
+        private int addMethod(LiquidClass liquidClass, string methodTag, string parameters, LiquidClass returnLiquidClass, LiquidClass returnLiquidSubclass, FunctionDelegate functionDelegate)
+        {
+            var classTag = classManager.GetTag(liquidClass);
+
+            var returnClassTag = classManager.GetTag(returnLiquidClass, returnLiquidSubclass);
+
+            var stub = classTag + "|" + returnClassTag + ":" + methodTag + parameters;
+
+            stubs[stub] = functionDelegate;
+
+            return -1;
+        }
+
+        private int addVirtualMethod(LiquidClass liquidClass, string methodTag, string parameters, LiquidClass returnLiquidClass, LiquidClass returnLiquidSubclass, FunctionDelegate functionDelegate)
+        {
+            var classTag = classManager.GetTag(liquidClass);
+
+            var returnClassTag = classManager.GetTag(returnLiquidClass, returnLiquidSubclass);
+
+            var stub = classTag + "|" + returnClassTag + ":" + methodTag + parameters;
+
+            stubs[stub] = functionDelegate;
+
+            var methodId = classManager.AddVirtualMethod(liquidClass, methodTag, parameters, new LiquidType(returnLiquidClass, returnLiquidSubclass), stub, functionDelegate);
+
+            return methodId;
+        }
+
+        private int addFunction(LiquidClass liquidClass, string functionTag, string parameters, LiquidClass returnLiquidClass, LiquidClass returnLiquidSubclass, FunctionDelegate functionDelegate)
+        {
+            var classTag = classManager.GetTag(liquidClass);
+
+            var returnClassTag = classManager.GetTag(returnLiquidClass, returnLiquidSubclass);
+
+            var stub = classTag + "|" + returnClassTag + ":" + functionTag + parameters;
+
+            stubs[stub] = functionDelegate;
+
+            return -1;
         }
 
         private void bindObject()
@@ -279,7 +210,7 @@ namespace LiquidPlayer.Kernal
             {
                 var obj = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Object;
 
-                a0 = (obj.Callback(lc, stack[sp])) ? 1 : 0;
+                a0 = (obj.VCallback(lc, stack[sp])) ? 1 : 0;
 
                 return false;
             });
@@ -288,14 +219,16 @@ namespace LiquidPlayer.Kernal
             {
                 var obj = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Object;
 
-                a0 = Program.Exec.ObjectManager.Compare(stack[sp], stack[sp - 1]);
+                a0 = Program.Exec.ObjectManager.VCompare(stack[sp], stack[sp - 1]);
 
                 return false;
             });
 
-            addMethod(liquidClass, "DelayMessage", "(Object,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "DelayMessage", "(Object,int,string,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                Program.Exec.Router.Delay(id, stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
+                var data = Liquid.Object.GetString(stack[sp - 2]);
+
+                Program.Exec.Router.Delay(id, stack[sp], (MessageBody)stack[sp - 1], data, stack[sp - 3], id);
 
                 return false;
             });
@@ -345,16 +278,29 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
-            addMethod(liquidClass, "PulseMessage", "(Object,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "IsEnabled", "()", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                Program.Exec.Router.Pulse(id, stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4]);
+                var obj = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Object;
+
+                a0 = (obj.IsEnabled) ? 1 : 0;
 
                 return false;
             });
 
-            addMethod(liquidClass, "SendMessage", "(Object,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "PulseMessage", "(Object,int,string,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                Program.Exec.Router.Send(id, stack[sp], stack[sp - 1], stack[sp - 2]);
+                var data = Liquid.Object.GetString(stack[sp - 2]);
+
+                Program.Exec.Router.Pulse(id, stack[sp], (MessageBody)stack[sp - 1], data, stack[sp - 3], stack[sp - 4], id);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "SendMessage", "(Object,int,string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var data = Liquid.Object.GetString(stack[sp - 2]);
+
+                Program.Exec.Router.Send(id, stack[sp], (MessageBody)stack[sp - 1], data, id);
 
                 return false;
             });
@@ -363,7 +309,162 @@ namespace LiquidPlayer.Kernal
             {
                 var obj = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Object;
 
-                obj.shutdown();
+                obj.VShutdown(lc);
+
+                return false;
+            });
+        }
+
+        private void bindSystem()
+        {
+            var liquidClass = Program.ClassManager.Find("System");
+
+            Program.ClassManager.Extends(liquidClass, LiquidClass.Object);
+
+            addFunction(liquidClass, "GetCharacterSet", "()", LiquidClass.CharacterSet, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = Program.Exec.ObjectManager.Copy(Program.Exec.ObjectManager.SystemCharacterSetId);
+
+                return false;
+            });
+
+            addFunction(liquidClass, "Launch", "(string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var fileName = Liquid.Object.GetString(stack[sp]);
+
+                System.Diagnostics.Process.Start(fileName);
+
+                return false;
+            });
+
+            addFunction(liquidClass, "MessageBox", "(string,string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var text = Liquid.Object.GetString(stack[sp]);
+
+                var caption = Liquid.Object.GetString(stack[sp - 1]);
+
+                System.Windows.Forms.MessageBox.Show(text, caption);
+
+                return false;
+            });
+
+            addFunction(liquidClass, "FileOpen", "(string,string,string)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var initialDirectory = Liquid.Object.GetString(stack[sp]);
+
+                var defaultExt = Liquid.Object.GetString(stack[sp - 1]);
+
+                var filter = Liquid.Object.GetString(stack[sp - 2]);
+
+                var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+
+                openFileDialog.InitialDirectory = initialDirectory;
+                openFileDialog.DefaultExt = defaultExt;
+                openFileDialog.Filter = filter;
+
+                if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    a0 = Liquid.Object.NewString(id, openFileDialog.FileName);
+                }
+                else
+                {
+                    a0 = Liquid.Object.NewString(id, "");
+                }
+
+                return false;
+            });
+
+            addFunction(liquidClass, "FileSaveAs", "(string,string)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var initialDirectory = Liquid.Object.GetString(stack[sp]);
+
+                var defaultExt = Liquid.Object.GetString(stack[sp - 1]);
+
+                var filter = Liquid.Object.GetString(stack[sp - 2]);
+
+                var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+
+                saveFileDialog.InitialDirectory = initialDirectory;
+                saveFileDialog.DefaultExt = defaultExt;
+                saveFileDialog.Filter = filter;
+
+                if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    a0 = Liquid.Object.NewString(id, saveFileDialog.FileName);
+                }
+                else
+                {
+                    a0 = Liquid.Object.NewString(id, "");
+                }
+
+                return false;
+            });
+        }
+
+        private void bindDebugger()
+        {
+            var liquidClass = Program.ClassManager.Find("Debugger");
+
+            Program.ClassManager.Extends(liquidClass, LiquidClass.Object);
+
+            addFunction(liquidClass, "Alert", "(string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var text = Liquid.Object.GetString(stack[sp]);
+
+                System.Windows.Forms.MessageBox.Show(text, "Debugger");
+
+                return false;
+            });
+
+            addFunction(liquidClass, "Assert", "(boolean,string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var text = Liquid.Object.GetString(stack[sp - 1]);
+
+                if (stack[sp] == 0)
+                {
+                    System.Windows.Forms.MessageBox.Show(text, "Debugger");
+                }
+
+                return false;
+            });
+
+            addFunction(liquidClass, "Breakpoint", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                return false;
+            });
+
+            addFunction(liquidClass, "Watch", "(int,double)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var task = Program.Exec.ObjectManager.GetTask(id);
+
+                var slot = stack[sp];
+
+                if (slot < 0 || slot > 9)
+                {
+                    task.RaiseError(ErrorCode.IllegalQuantity);
+                    return false;
+                }
+
+                var value = Liquid.Object.GetDouble(stack[sp - 1]);
+
+                Program.Exec.Watch[slot] = value;
+
+                return false;
+            });
+
+            addFunction(liquidClass, "Watch", "(int,Object)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var task = Program.Exec.ObjectManager.GetTask(id);
+
+                var slot = stack[sp];
+
+                if (slot < 0 || slot > 9)
+                {
+                    task.RaiseError(ErrorCode.IllegalQuantity);
+                    return false;
+                }
+
+                Program.Exec.Watch[slot] = stack[sp - 1];
 
                 return false;
             });
@@ -395,21 +496,23 @@ namespace LiquidPlayer.Kernal
             {
                 var message = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Message;
 
-                a0 = message.GetBody();
+                a0 = (int)message.GetBody();
 
                 return false;
             });
 
-            addMethod(liquidClass, "GetData", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "GetData", "()", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var message = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Message;
 
-                a0 = message.GetData();
+                var data = message.GetData();
+
+                a0 = Liquid.Object.NewString(id, data);
 
                 return false;
             });
 
-            addMethod(liquidClass, "IsFrom", "()", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "IsFrom", "(Object)", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var message = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Message;
 
@@ -418,27 +521,11 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
-            addMethod(liquidClass, "IsTo", "()", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "IsTo", "(Object)", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var message = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Message;
 
                 a0 = (message.IsTo(stack[sp])) ? 1 : 0;
-
-                return false;
-            });
-        }
-
-        private void bindException()
-        {
-            var liquidClass = Program.ClassManager.Find("Exception");
-
-            Program.ClassManager.Extends(liquidClass, LiquidClass.Object);
-
-            addMethod(liquidClass, "Constructor", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var data = Liquid.Object.GetString(id, stack[sp - 1]);
-
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Exception(a0, "", 0, (ExceptionCode)stack[sp], data);
 
                 return false;
             });
@@ -686,6 +773,15 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
+            addMethod(liquidClass, "Fill", "(subclass)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var matrix = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Matrix;
+
+                matrix.Fill(stack[sp]);
+
+                return false;
+            });
+
             addMethod(liquidClass, "GetHeight", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var matrix = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Matrix;
@@ -704,14 +800,44 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
-            //addFunction("Matrix.Operator+", "(Matrix,Matrix)", LiquidClass.Matrix, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            //{
-            //    var matrix = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Matrix;
+            addMethod(liquidClass, "Identity", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var matrix = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Matrix;
 
-            //    a0 = //;
+                matrix.Identity();
 
-            //    return false;
-            //});
+                return false;
+            });
+
+            addFunction(LiquidClass.Matrix, "Operator+", "(Matrix,Matrix)", LiquidClass.Matrix, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = Liquid.Matrix.Add(stack[sp], stack[sp - 1]);
+
+                return false;
+            });
+
+            addFunction(LiquidClass.Matrix, "Operator-", "(Matrix,Matrix)", LiquidClass.Matrix, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = Liquid.Matrix.Subtract(stack[sp], stack[sp - 1]);
+
+                return false;
+            });
+
+            addFunction(LiquidClass.Matrix, "Operator*", "(Matrix,Matrix)", LiquidClass.Matrix, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = Liquid.Matrix.Multiply(stack[sp], stack[sp - 1]);
+
+                return false;
+            });
+
+            addFunction(LiquidClass.Matrix, "Operator*", "(Matrix,double)", LiquidClass.Matrix, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var scalarValue = Liquid.Object.GetDouble(stack[sp - 1]);
+
+                a0 = Liquid.Matrix.Multiply(stack[sp], scalarValue);
+
+                return false;
+            });
         }
 
         private void bindDictionary()
@@ -731,10 +857,17 @@ namespace LiquidPlayer.Kernal
             {
                 var dictionary = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Dictionary;
 
-                var key = Liquid.Object.GetString(id, stack[sp]);
+                var key = Liquid.Object.GetString(stack[sp]);
+
+                var hiAddress = dictionary.Index(key);
+
+                if (hiAddress == -1)
+                {
+                    return false;
+                }
 
                 bx.LoAddress = id;
-                bx.HiAddress = dictionary.Index(key);
+                bx.HiAddress = hiAddress;
 
                 return false;
             });
@@ -752,7 +885,7 @@ namespace LiquidPlayer.Kernal
             {
                 var dictionary = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Dictionary;
 
-                var key = Liquid.Object.GetString(id, stack[sp]);
+                var key = Liquid.Object.GetString(stack[sp]);
 
                 dictionary.Delete(key);
 
@@ -763,7 +896,7 @@ namespace LiquidPlayer.Kernal
             {
                 var dictionary = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Dictionary;
 
-                var key = Liquid.Object.GetString(id, stack[sp]);
+                var key = Liquid.Object.GetString(stack[sp]);
 
                 a0 = (dictionary.Exists(key)) ? 1 : 0;
 
@@ -783,7 +916,7 @@ namespace LiquidPlayer.Kernal
             {
                 var dictionary = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Dictionary;
 
-                var key = Liquid.Object.GetString(id, stack[sp]);
+                var key = Liquid.Object.GetString(stack[sp]);
 
                 dictionary.Insert(key, stack[sp - 1]);
 
@@ -1203,9 +1336,9 @@ namespace LiquidPlayer.Kernal
 
             addFunction(liquidClass, "Exists", "(string)", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var path = Liquid.Object.GetString(id, stack[sp]);
+                var resolvedPath = Util.FindFile(Liquid.Object.GetString(stack[sp]), Program.SharedPath);
 
-                a0 = (System.IO.File.Exists(path) == true) ? 1 : 0;
+                a0 = (resolvedPath != "") ? 1 : 0;
 
                 return false;
             });
@@ -1214,7 +1347,7 @@ namespace LiquidPlayer.Kernal
             {
                 var task = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Task;
 
-                var searchPattern = Liquid.Object.GetString(id, stack[sp]);
+                var searchPattern = Liquid.Object.GetString(stack[sp]);
 
                 a0 = task.GetFileList(searchPattern);
 
@@ -1382,7 +1515,7 @@ namespace LiquidPlayer.Kernal
             {
                 var stream = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Stream;
 
-                var data = Liquid.Object.GetString(id, stack[sp]);
+                var data = Liquid.Object.GetString(stack[sp]);
 
                 stream.Write(data);
 
@@ -1412,9 +1545,9 @@ namespace LiquidPlayer.Kernal
 
             addMethod(liquidClass, "Constructor", "(string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var filename = Liquid.Object.GetString(id, stack[sp]);
+                var path = Liquid.Object.GetString(stack[sp]);
 
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.FileStream(a0, filename);
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.FileStream(a0, path);
 
                 return false;
             });
@@ -1542,7 +1675,7 @@ namespace LiquidPlayer.Kernal
             {
                 var textWriter = Program.Exec.ObjectManager[id].LiquidObject as Liquid.TextWriter;
 
-                var data = Convert.ToString(Liquid.Object.GetLong(id, stack[sp]));
+                var data = Convert.ToString(Liquid.Object.GetLong(stack[sp]));
 
                 textWriter.WriteLine(data);
 
@@ -1553,7 +1686,7 @@ namespace LiquidPlayer.Kernal
             {
                 var textWriter = Program.Exec.ObjectManager[id].LiquidObject as Liquid.TextWriter;
 
-                var data = Convert.ToString(Liquid.Object.GetDouble(id, stack[sp]));
+                var data = Convert.ToString(Liquid.Object.GetDouble(stack[sp]));
 
                 textWriter.WriteLine(data);
 
@@ -1564,7 +1697,7 @@ namespace LiquidPlayer.Kernal
             {
                 var textWriter = Program.Exec.ObjectManager[id].LiquidObject as Liquid.TextWriter;
 
-                var data = Liquid.Object.GetString(id, stack[sp]);
+                var data = Liquid.Object.GetString(stack[sp]);
 
                 textWriter.WriteLine(data);
 
@@ -1613,6 +1746,15 @@ namespace LiquidPlayer.Kernal
 
             Program.ClassManager.Extends(liquidClass, LiquidClass.Object);
 
+            addMethod(liquidClass, "AlphaTest", "(boolean)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
+
+                ortho.AlphaTest(stack[sp] != 0);
+
+                return false;
+            });
+
             addMethod(liquidClass, "BezierCurve", "(int,int,int,int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
@@ -1626,7 +1768,7 @@ namespace LiquidPlayer.Kernal
             {
                 var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
 
-                ortho.Blend((stack[sp] != 0) ? true : false);
+                ortho.Blend(stack[sp] != 0);
 
                 return false;
             });
@@ -1640,6 +1782,15 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
+            addMethod(liquidClass, "Circle", "(int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
+
+                ortho.Circle(stack[sp], stack[sp - 1], stack[sp - 2]);
+
+                return false;
+            });
+
             addMethod(liquidClass, "CircleFill", "(int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
@@ -1649,11 +1800,114 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
+            addMethod(liquidClass, "ClipRectangle", "(int,int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
+
+                ortho.ClipRectangle(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], (uint)stack[sp - 4], (uint)stack[sp - 5]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Ellipse", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
+
+                ortho.Ellipse(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "EllipseFill", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
+
+                ortho.EllipseFill(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
+
+                return false;
+            });
+
             addMethod(liquidClass, "Ink", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
 
                 ortho.Ink((uint)stack[sp]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Line", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
+
+                ortho.Line(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "LineWidth", "(float)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
+
+                ortho.LineWidth(Util.Int2Float(stack[sp]));
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Node", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
+
+                ortho.Node(stack[sp]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Plot", "(int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
+
+                ortho.Plot(stack[sp], stack[sp - 1]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "PointSize", "(float)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
+
+                ortho.PointSize(Util.Int2Float(stack[sp]));
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Print", "(CharacterSet,int,int,byte)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
+
+                ortho.PrintCharacterSet(stack[sp], stack[sp - 1], stack[sp - 2], (byte)stack[sp - 3]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Print", "(CharacterSet,int,int,string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
+
+                var caption = Liquid.Object.GetString(stack[sp - 3]);
+
+                ortho.PrintCharacterSet(stack[sp], stack[sp - 1], stack[sp - 2], caption);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Print", "(Font,int,int,string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
+
+                var caption = Liquid.Object.GetString(stack[sp - 3]);
+
+                ortho.Print(stack[sp], stack[sp - 1], stack[sp - 2], caption);
 
                 return false;
             });
@@ -1676,13 +1930,24 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
+            addMethod(liquidClass, "Rotate", "(double)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
+
+                var r = Liquid.Object.GetDouble(stack[sp]);
+
+                ortho.Rotate(r);
+
+                return false;
+            });
+
             addMethod(liquidClass, "Scale", "(double,double)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var ortho = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Ortho;
 
-                var x = Liquid.Object.GetDouble(id, stack[sp]);
+                var x = Liquid.Object.GetDouble(stack[sp]);
 
-                var y = Liquid.Object.GetDouble(id, stack[sp - 1]);
+                var y = Liquid.Object.GetDouble(stack[sp - 1]);
 
                 ortho.Scale(x, y);
 
@@ -1718,7 +1983,7 @@ namespace LiquidPlayer.Kernal
             {
                 var perspective = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Perspective;
 
-                perspective.AlphaTest((stack[sp] != 0) ? true : false);
+                perspective.AlphaTest(stack[sp] != 0);
 
                 return false;
             });
@@ -1732,20 +1997,11 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
-            addMethod(liquidClass, "BindTexture", "(Bitmap)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var perspective = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Perspective;
-
-                perspective.BindTexture(stack[sp]);
-
-                return false;
-            });
-
             addMethod(liquidClass, "Blend", "(boolean)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var perspective = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Perspective;
 
-                perspective.Blend((stack[sp] != 0) ? true : false);
+                perspective.Blend(stack[sp] != 0);
 
                 return false;
             });
@@ -1772,7 +2028,7 @@ namespace LiquidPlayer.Kernal
             {
                 var perspective = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Perspective;
 
-                perspective.DepthTest((stack[sp] != 0) ? true : false);
+                perspective.DepthTest((stack[sp] != 0));
 
                 return false;
             });
@@ -1813,6 +2069,30 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
+            addMethod(liquidClass, "Normal", "(double,double,double)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var perspective = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Perspective;
+
+                var x = Liquid.Object.GetDouble(stack[sp]);
+
+                var y = Liquid.Object.GetDouble(stack[sp - 1]);
+
+                var z = Liquid.Object.GetDouble(stack[sp - 2]);
+
+                perspective.Normal(x, y, z);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "PointSize", "(float)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var perspective = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Perspective;
+
+                perspective.PointSize(Util.Int2Float(stack[sp]));
+
+                return false;
+            });
+
             addMethod(liquidClass, "PopMatrix", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var perspective = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Perspective;
@@ -1835,15 +2115,30 @@ namespace LiquidPlayer.Kernal
             {
                 var perspective = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Perspective;
 
-                var angle = Liquid.Object.GetDouble(id, stack[sp]);
+                var angle = Liquid.Object.GetDouble(stack[sp]);
 
-                var x = Liquid.Object.GetDouble(id, stack[sp - 1]);
+                var x = Liquid.Object.GetDouble(stack[sp - 1]);
 
-                var y = Liquid.Object.GetDouble(id, stack[sp - 2]);
+                var y = Liquid.Object.GetDouble(stack[sp - 2]);
 
-                var z = Liquid.Object.GetDouble(id, stack[sp - 3]);
+                var z = Liquid.Object.GetDouble(stack[sp - 3]);
 
                 perspective.Rotate(angle, x, y, z);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Scale", "(double,double,double)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var perspective = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Perspective;
+
+                var x = Liquid.Object.GetDouble(stack[sp]);
+
+                var y = Liquid.Object.GetDouble(stack[sp - 1]);
+
+                var z = Liquid.Object.GetDouble(stack[sp - 2]);
+
+                perspective.Scale(x, y, z);
 
                 return false;
             });
@@ -1852,11 +2147,20 @@ namespace LiquidPlayer.Kernal
             {
                 var perspective = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Perspective;
 
-                var x = Liquid.Object.GetDouble(id, stack[sp]);
+                var x = Liquid.Object.GetDouble(stack[sp]);
 
-                var y = Liquid.Object.GetDouble(id, stack[sp - 1]);
+                var y = Liquid.Object.GetDouble(stack[sp - 1]);
 
                 perspective.TexCoord(x, y);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "TextureMap", "(Bitmap)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var perspective = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Perspective;
+
+                perspective.TextureMap(stack[sp]);
 
                 return false;
             });
@@ -1865,11 +2169,11 @@ namespace LiquidPlayer.Kernal
             {
                 var perspective = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Perspective;
 
-                var x = Liquid.Object.GetDouble(id, stack[sp]);
+                var x = Liquid.Object.GetDouble(stack[sp]);
 
-                var y = Liquid.Object.GetDouble(id, stack[sp - 1]);
+                var y = Liquid.Object.GetDouble(stack[sp - 1]);
 
-                var z = Liquid.Object.GetDouble(id, stack[sp - 2]);
+                var z = Liquid.Object.GetDouble(stack[sp - 2]);
 
                 perspective.Translate(x, y, z);
 
@@ -1880,11 +2184,11 @@ namespace LiquidPlayer.Kernal
             {
                 var perspective = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Perspective;
 
-                var x = Liquid.Object.GetDouble(id, stack[sp]);
+                var x = Liquid.Object.GetDouble(stack[sp]);
 
-                var y = Liquid.Object.GetDouble(id, stack[sp - 1]);
+                var y = Liquid.Object.GetDouble(stack[sp - 1]);
 
-                var z = Liquid.Object.GetDouble(id, stack[sp - 2]);
+                var z = Liquid.Object.GetDouble(stack[sp - 2]);
 
                 perspective.Vertex(x, y, z);
 
@@ -1901,6 +2205,15 @@ namespace LiquidPlayer.Kernal
             addMethod(liquidClass, "Constructor", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Entity(id);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "IsRunning", "()", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var entity = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Entity;
+
+                a0 = (entity.IsRunning) ? 1 : 0;
 
                 return false;
             });
@@ -1927,7 +2240,7 @@ namespace LiquidPlayer.Kernal
             {
                 var entity = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Entity;
 
-                entity.Update(lc);
+                entity.VUpdate(lc);
 
                 return false;
             });
@@ -1960,6 +2273,24 @@ namespace LiquidPlayer.Kernal
                 var gel = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL;
 
                 gel.Center();
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetMouseOverNode", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var gel = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL;
+
+                a0 = (Sprockets.Input.MousePointingAt == id) ? Sprockets.Input.MousePointingAtNode : -1;
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetNodeClicked", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var gel = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL;
+
+                a0 = (Sprockets.Input.MouseClickedOn == id) ? Sprockets.Input.MouseClickedOnNode : -1;
 
                 return false;
             });
@@ -2018,6 +2349,15 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
+            addMethod(liquidClass, "GotFocus", "()", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var gel = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL;
+
+                a0 = (gel.GotFocus) ? 1 : 0;
+
+                return false;
+            });
+
             addMethod(liquidClass, "Hide", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var gel = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL;
@@ -2036,11 +2376,29 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
+            addMethod(liquidClass, "IsMouseOver", "()", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var gel = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL;
+
+                a0 = (Sprockets.Input.MousePointingAt == id) ? 1 : 0;
+
+                return false;
+            });
+
+            addMethod(liquidClass, "IsMouseOverNode", "(int)", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var gel = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL;
+
+                a0 = (Sprockets.Input.MousePointingAt == id && Sprockets.Input.MousePointingAtNode == stack[sp]) ? 1 : 0;
+
+                return false;
+            });
+
             addMethod(liquidClass, "IsNodeClicked", "(int)", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var gel = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL;
 
-                a0 = (Sprockets.Input.MouseClickedOnNode == stack[sp]) ? 1 : 0;
+                a0 = (Sprockets.Input.MouseClickedOn == id && Sprockets.Input.MouseClickedOnNode == stack[sp]) ? 1 : 0;
 
                 return false;
             });
@@ -2067,9 +2425,9 @@ namespace LiquidPlayer.Kernal
             {
                 var gel = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL;
 
-                var direction = Liquid.Object.GetDouble(id, stack[sp]);
+                var direction = Liquid.Object.GetDouble(stack[sp]);
 
-                var speed = Liquid.Object.GetDouble(id, stack[sp - 1]);
+                var speed = Liquid.Object.GetDouble(stack[sp - 1]);
 
                 gel.MoveDirection(direction, speed);
 
@@ -2098,7 +2456,7 @@ namespace LiquidPlayer.Kernal
             {
                 var gel = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL;
 
-                gel.Render(lc, stack[sp]);
+                gel.VRender(lc, stack[sp]);
 
                 return false;
             });
@@ -2107,7 +2465,7 @@ namespace LiquidPlayer.Kernal
             {
                 var gel = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL;
 
-                var rotation = Liquid.Object.GetDouble(id, stack[sp]);
+                var rotation = Liquid.Object.GetDouble(stack[sp]);
 
                 gel.Rotate(rotation);
 
@@ -2118,7 +2476,7 @@ namespace LiquidPlayer.Kernal
             {
                 var gel = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL;
 
-                var scale = Liquid.Object.GetDouble(id, stack[sp]);
+                var scale = Liquid.Object.GetDouble(stack[sp]);
 
                 gel.Scale(scale);
 
@@ -2129,11 +2487,20 @@ namespace LiquidPlayer.Kernal
             {
                 var gel = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL;
 
-                var xScale = Liquid.Object.GetDouble(id, stack[sp]);
+                var xScale = Liquid.Object.GetDouble(stack[sp]);
 
-                var yScale = Liquid.Object.GetDouble(id, stack[sp - 1]);
+                var yScale = Liquid.Object.GetDouble(stack[sp - 1]);
 
                 gel.Scale(xScale, yScale);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "SetFocus", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var gel = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL;
+
+                Program.Exec.ObjectManager.Focus = id;
 
                 return false;
             });
@@ -2260,6 +2627,15 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
+            addMethod(liquidClass, "GotFocus", "()", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var gel3D = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL3D;
+
+                a0 = (gel3D.GotFocus) ? 1 : 0;
+
+                return false;
+            });
+
             addMethod(liquidClass, "Hide", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var gel3D = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL3D;
@@ -2282,11 +2658,11 @@ namespace LiquidPlayer.Kernal
             {
                 var gel3D = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL3D;
 
-                var x = Liquid.Object.GetDouble(id, stack[sp]);
+                var x = Liquid.Object.GetDouble(stack[sp]);
 
-                var y = Liquid.Object.GetDouble(id, stack[sp - 1]);
+                var y = Liquid.Object.GetDouble(stack[sp - 1]);
 
-                var z = Liquid.Object.GetDouble(id, stack[sp - 2]);
+                var z = Liquid.Object.GetDouble(stack[sp - 2]);
 
                 gel3D.Move(x, y, z);
 
@@ -2297,7 +2673,7 @@ namespace LiquidPlayer.Kernal
             {
                 var gel3D = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL3D;
 
-                gel3D.Render(lc, stack[sp]);
+                gel3D.VRender(lc, stack[sp]);
 
                 return false;
             });
@@ -2306,11 +2682,11 @@ namespace LiquidPlayer.Kernal
             {
                 var gel3D = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL3D;
 
-                var x = Liquid.Object.GetDouble(id, stack[sp]);
+                var x = Liquid.Object.GetDouble(stack[sp]);
 
-                var y = Liquid.Object.GetDouble(id, stack[sp - 1]);
+                var y = Liquid.Object.GetDouble(stack[sp - 1]);
 
-                var z = Liquid.Object.GetDouble(id, stack[sp - 2]);
+                var z = Liquid.Object.GetDouble(stack[sp - 2]);
 
                 gel3D.Rotate(x, y, z);
 
@@ -2321,13 +2697,22 @@ namespace LiquidPlayer.Kernal
             {
                 var gel3D = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL3D;
 
-                var x = Liquid.Object.GetDouble(id, stack[sp]);
+                var x = Liquid.Object.GetDouble(stack[sp]);
 
-                var y = Liquid.Object.GetDouble(id, stack[sp - 1]);
+                var y = Liquid.Object.GetDouble(stack[sp - 1]);
 
-                var z = Liquid.Object.GetDouble(id, stack[sp - 2]);
+                var z = Liquid.Object.GetDouble(stack[sp - 2]);
 
                 gel3D.Scale(x, y, z);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "SetFocus", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var gel3D = Program.Exec.ObjectManager[id].LiquidObject as Liquid.GEL3D;
+
+                Program.Exec.ObjectManager.Focus = id;
 
                 return false;
             });
@@ -2359,9 +2744,13 @@ namespace LiquidPlayer.Kernal
 
             addMethod(liquidClass, "Constructor", "(string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var fileName = Liquid.Object.GetString(id, stack[sp]);
+                var path = Liquid.Object.GetString(stack[sp]);
 
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Task(a0, fileName, "");
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Task(a0, path, "");
+
+                var task = Program.Exec.ObjectManager[a0].LiquidObject as Liquid.Task;
+
+                task.CurrentDirectory = System.IO.Directory.GetCurrentDirectory();
 
                 Program.Exec.AddTask(a0);
 
@@ -2370,11 +2759,15 @@ namespace LiquidPlayer.Kernal
 
             addMethod(liquidClass, "Constructor", "(string,string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var fileName = Liquid.Object.GetString(id, stack[sp]);
+                var path = Liquid.Object.GetString(stack[sp]);
 
-                var arguments = Liquid.Object.GetString(id, stack[sp - 1]);
+                var arguments = Liquid.Object.GetString(stack[sp - 1]);
 
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Task(a0, fileName, arguments);
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Task(a0, path, arguments);
+
+                var task = Program.Exec.ObjectManager[a0].LiquidObject as Liquid.Task;
+
+                task.CurrentDirectory = System.IO.Directory.GetCurrentDirectory();
 
                 Program.Exec.AddTask(a0);
 
@@ -2388,6 +2781,15 @@ namespace LiquidPlayer.Kernal
                 return task.Await(stack[sp]);
             });
 
+            //addMethod(liquidClass, "CheckTrap", "()", LiquidClass.Exception, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            //{
+            //    var task = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Task;
+
+            //    a0 = task.CheckTrap();
+
+            //    return false;
+            //});
+
             addMethod(liquidClass, "ClearSignals", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var task = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Task;
@@ -2396,6 +2798,15 @@ namespace LiquidPlayer.Kernal
 
                 return false;
             });
+
+            //addMethod(liquidClass, "EmptyTrap", "()", LiquidClass.Exception, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            //{
+            //    var task = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Task;
+
+            //    a0 = task.EmptyTrap();
+
+            //    return false;
+            //});
 
             addMethod(liquidClass, "End", "(Task)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
@@ -2410,9 +2821,18 @@ namespace LiquidPlayer.Kernal
             {
                 var task = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Task;
 
-                var data = Liquid.Object.GetString(id, stack[sp]);
+                var data = Liquid.Object.GetString(stack[sp]);
 
                 task.ErrorOut(data);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "ExitCode", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var task = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Task;
+
+                a0 = task.ExitCode;
 
                 return false;
             });
@@ -2422,15 +2842,6 @@ namespace LiquidPlayer.Kernal
                 var task = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Task;
 
                 a0 = task.GetCommandLine();
-
-                return false;
-            });
-
-            addMethod(liquidClass, "GetError", "()", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var task = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Task;
-
-                a0 = Liquid.Object.NewString(id, task.GetError());
 
                 return false;
             });
@@ -2480,6 +2891,26 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
+            addMethod(liquidClass, "RaiseError", "(string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var task = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Task;
+
+                var data = Liquid.Object.GetString(stack[sp]);
+
+                task.RaiseError(ErrorCode.User, data);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "ReadErrorStream", "()", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var task = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Task;
+
+                a0 = Liquid.Object.NewString(id, task.ReadErrorStream());
+
+                return false;
+            });
+
             addMethod(liquidClass, "Resume", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var task = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Task;
@@ -2508,7 +2939,7 @@ namespace LiquidPlayer.Kernal
 
                     if (time < 1)
                     {
-                        task.Throw(ExceptionCode.IllegalQuantity);
+                        task.RaiseError(ErrorCode.IllegalQuantity);
                         return false;
                     }
 
@@ -2558,7 +2989,7 @@ namespace LiquidPlayer.Kernal
             {
                 var task = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Task;
 
-                return (task.PCB.State == Liquid.Task.ProcessState.Running) ? true : false;
+                return (task.PCB.State == Liquid.Task.ProcessState.Running);
             });
 
             addMethod(liquidClass, "Tock", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
@@ -2571,6 +3002,15 @@ namespace LiquidPlayer.Kernal
 
                 return false;
             });
+
+            //addMethod(liquidClass, "Trap", "(boolean)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            //{
+            //    var task = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Task;
+
+            //    task.Trap(stack[sp] != 0);
+
+            //    return false;
+            //});
         }
 
         private void bindProgram()
@@ -2583,7 +3023,7 @@ namespace LiquidPlayer.Kernal
             {
                 var program = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Program;
 
-                program.AutoSnap((stack[sp] != 0) ? true : false);
+                program.AutoSnap(stack[sp] != 0);
 
                 return false;
             });
@@ -2691,6 +3131,15 @@ namespace LiquidPlayer.Kernal
                 return true;
             });
 
+            addMethod(liquidClass, "DequeueMessage", "()", LiquidClass.Message, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var app = Program.Exec.ObjectManager[id].LiquidObject as Liquid.App;
+
+                a0 = app.DequeueMessage();
+
+                return false;
+            });
+
             addMethod(liquidClass, "GetScreenHeight", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 a0 = Program.ScreenHeight;
@@ -2701,6 +3150,15 @@ namespace LiquidPlayer.Kernal
             addMethod(liquidClass, "GetScreenWidth", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 a0 = Program.ScreenWidth;
+
+                return false;
+            });
+
+            addMethod(liquidClass, "IsMessageQueueEmpty", "()", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var app = Program.Exec.ObjectManager[id].LiquidObject as Liquid.App;
+
+                a0 = (app.IsMessageQueueEmpty()) ? 1 : 0;
 
                 return false;
             });
@@ -2737,7 +3195,7 @@ namespace LiquidPlayer.Kernal
 
             Program.ClassManager.Extends(liquidClass, LiquidClass.Object);
 
-            addFunction(liquidClass, "Atomic", "()", LiquidClass.Long, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addFunction(liquidClass, "GetAtomic", "()", LiquidClass.Long, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 c0 = Program.AtomicClock;
 
@@ -2753,6 +3211,41 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
+            addFunction(liquidClass, "GetDay", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = DateTime.Now.Day;
+
+                return false;
+            });
+
+            addFunction(liquidClass, "GetHour", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = DateTime.Now.Hour;
+
+                return false;
+            });
+
+            addFunction(liquidClass, "GetMinute", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = DateTime.Now.Minute;
+
+                return false;
+            });
+
+            addFunction(liquidClass, "GetMonth", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = DateTime.Now.Month;
+
+                return false;
+            });
+
+            addFunction(liquidClass, "GetSecond", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = DateTime.Now.Second;
+
+                return false;
+            });
+
             addFunction(liquidClass, "GetTime", "()", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var time = DateTime.Now.ToString("HH:mm:ss.ff");
@@ -2762,9 +3255,16 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
-            addFunction(liquidClass, "System", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addFunction(liquidClass, "GetSystem", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 a0 = Program.SystemClock;
+
+                return false;
+            });
+
+            addFunction(liquidClass, "GetYear", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = DateTime.Now.Year;
 
                 return false;
             });
@@ -2785,31 +3285,67 @@ namespace LiquidPlayer.Kernal
 
             addFunction(liquidClass, "Clamp", "(double,double,double)", LiquidClass.Double, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var val = Liquid.Object.GetDouble(id, stack[sp]);
+                var val = Liquid.Object.GetDouble(stack[sp]);
 
-                var min = Liquid.Object.GetDouble(id, stack[sp - 1]);
+                var min = Liquid.Object.GetDouble(stack[sp - 1]);
 
-                var max = Liquid.Object.GetDouble(id, stack[sp - 2]);
+                var max = Liquid.Object.GetDouble(stack[sp - 2]);
 
                 d0 = Util.Clamp(val, min, max);
 
                 return false;
             });
 
-            addFunction(liquidClass, "Degree", "(double)", LiquidClass.Double, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addFunction(liquidClass, "Degrees", "(double)", LiquidClass.Double, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var radian = Liquid.Object.GetDouble(id, stack[sp]);
+                var radian = Liquid.Object.GetDouble(stack[sp]);
 
-                d0 = radian * 57.29577951308232;
+                d0 = radian * 57.29577951308232d;
 
                 return false;
             });
 
-            addFunction(liquidClass, "Radian", "(double)", LiquidClass.Double, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addFunction(liquidClass, "Max", "(int,int)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var degree = Liquid.Object.GetDouble(id, stack[sp]);
+                a0 = Util.Max(stack[sp], stack[sp - 1]);
 
-                d0 = degree * 0.0174532925199433;
+                return false;
+            });
+
+            addFunction(liquidClass, "Max", "(double,double)", LiquidClass.Double, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var val = Liquid.Object.GetDouble(stack[sp]);
+
+                var max = Liquid.Object.GetDouble(stack[sp - 1]);
+
+                d0 = Util.Max(val, max);
+
+                return false;
+            });
+
+            addFunction(liquidClass, "Min", "(int,int)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = Util.Min(stack[sp], stack[sp - 1]);
+
+                return false;
+            });
+
+            addFunction(liquidClass, "Min", "(double,double)", LiquidClass.Double, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var val = Liquid.Object.GetDouble(stack[sp]);
+
+                var min = Liquid.Object.GetDouble(stack[sp - 1]);
+
+                d0 = Util.Min(val, min);
+
+                return false;
+            });
+
+            addFunction(liquidClass, "Radians", "(double)", LiquidClass.Double, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var degree = Liquid.Object.GetDouble(stack[sp]);
+
+                d0 = degree * 0.0174532925199433d;
 
                 return false;
             });
@@ -2830,9 +3366,9 @@ namespace LiquidPlayer.Kernal
 
             addFunction(liquidClass, "Range", "(double,double)", LiquidClass.Double, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var min = Liquid.Object.GetDouble(id, stack[sp]);
+                var min = Liquid.Object.GetDouble(stack[sp]);
 
-                var max = Liquid.Object.GetDouble(id, stack[sp - 1]);
+                var max = Liquid.Object.GetDouble(stack[sp - 1]);
 
                 d0 = Program.Random.Range(min, max);
 
@@ -2855,9 +3391,9 @@ namespace LiquidPlayer.Kernal
 
             addFunction(liquidClass, "IsMatch", "(string,string)", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var input = Liquid.Object.GetString(id, stack[sp]);
+                var input = Liquid.Object.GetString(stack[sp]);
 
-                var pattern = Liquid.Object.GetString(id, stack[sp - 1]);
+                var pattern = Liquid.Object.GetString(stack[sp - 1]);
 
                 a0 = (System.Text.RegularExpressions.Regex.IsMatch(input, pattern)) ? 1 : 0;
 
@@ -2866,9 +3402,9 @@ namespace LiquidPlayer.Kernal
 
             addFunction(liquidClass, "Match", "(string,string)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var input = Liquid.Object.GetString(id, stack[sp]);
+                var input = Liquid.Object.GetString(stack[sp]);
 
-                var pattern = Liquid.Object.GetString(id, stack[sp - 1]);
+                var pattern = Liquid.Object.GetString(stack[sp - 1]);
 
                 var results = (System.Text.RegularExpressions.Regex.Match(input, pattern));
 
@@ -2879,11 +3415,11 @@ namespace LiquidPlayer.Kernal
 
             addFunction(liquidClass, "Replace", "(string,string,string)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var input = Liquid.Object.GetString(id, stack[sp]);
+                var input = Liquid.Object.GetString(stack[sp]);
 
-                var pattern = Liquid.Object.GetString(id, stack[sp - 1]);
+                var pattern = Liquid.Object.GetString(stack[sp - 1]);
 
-                var replacement = Liquid.Object.GetString(id, stack[sp - 2]);
+                var replacement = Liquid.Object.GetString(stack[sp - 2]);
 
                 var results = System.Text.RegularExpressions.Regex.Replace(input, pattern, replacement);
 
@@ -2901,19 +3437,40 @@ namespace LiquidPlayer.Kernal
 
             addFunction(liquidClass, "Darken", "(int,float)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
+                var task = Program.Exec.ObjectManager.GetTask(id);
+
                 var color = stack[sp];
 
                 var amount = Util.Int2Float(stack[sp - 1]);
 
                 if (amount < 0)
                 {
-                    var task = Program.Exec.ObjectManager.GetTask(id);
-
-                    task.Throw(ExceptionCode.IllegalQuantity);
+                    task.RaiseError(ErrorCode.IllegalQuantity);
                     return false;
                 }
 
                 a0 = (int)Sprockets.Color.Darken((uint)color, amount);
+
+                return false;
+            });
+
+            addFunction(liquidClass, "GetAlpha", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = stack[sp] >> 24;
+
+                return false;
+            });
+
+            addFunction(liquidClass, "GetBlue", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = stack[sp] >> 16 & 255;
+
+                return false;
+            });
+
+            addFunction(liquidClass, "GetGreen", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = stack[sp] >> 8 & 255;
 
                 return false;
             });
@@ -2939,8 +3496,17 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
+            addFunction(liquidClass, "GetRed", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = stack[sp] & 255;
+
+                return false;
+            });
+
             addFunction(liquidClass, "Gradient", "(int,int,float)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
+                var task = Program.Exec.ObjectManager.GetTask(id);
+
                 var color1 = stack[sp];
                 var color2 = stack[sp - 1];
 
@@ -2948,9 +3514,7 @@ namespace LiquidPlayer.Kernal
 
                 if (amount < 0)
                 {
-                    var task = Program.Exec.ObjectManager.GetTask(id);
-
-                    task.Throw(ExceptionCode.IllegalQuantity);
+                    task.RaiseError(ErrorCode.IllegalQuantity);
                     return false;
                 }
 
@@ -2968,17 +3532,24 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
+            addFunction(liquidClass, "GrayScale", "(int)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = (int)Sprockets.Color.GrayScale((uint)stack[sp]);
+
+                return false;
+            });
+
             addFunction(liquidClass, "Lighten", "(int,float)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
+                var task = Program.Exec.ObjectManager.GetTask(id);
+
                 var color = stack[sp];
 
                 var amount = Util.Int2Float(stack[sp - 1]);
 
                 if (amount < 0)
                 {
-                    var task = Program.Exec.ObjectManager.GetTask(id);
-
-                    task.Throw(ExceptionCode.IllegalQuantity);
+                    task.RaiseError(ErrorCode.IllegalQuantity);
                     return false;
                 }
 
@@ -2997,6 +3568,13 @@ namespace LiquidPlayer.Kernal
             addFunction(liquidClass, "RGBA", "(byte,byte,byte,byte)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 a0 = (int)Sprockets.Color.GetColor((byte)stack[sp], (byte)stack[sp - 1], (byte)stack[sp - 2], (byte)stack[sp - 3]);
+
+                return false;
+            });
+
+            addFunction(liquidClass, "Sepia", "(int)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                a0 = (int)Sprockets.Color.Sepia((uint)stack[sp]);
 
                 return false;
             });
@@ -3042,6 +3620,24 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
+            addMethod(liquidClass, "GetHeight", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var bitmap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Bitmap;
+
+                a0 = bitmap.Height;
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetWidth", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var bitmap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Bitmap;
+
+                a0 = bitmap.Width;
+
+                return false;
+            });
+
             addMethod(liquidClass, "Poke", "(int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var bitmap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Bitmap;
@@ -3064,7 +3660,7 @@ namespace LiquidPlayer.Kernal
             {
                 var bitmap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Bitmap;
 
-                bitmap.Smooth((stack[sp] != 0) ? true : false);
+                bitmap.Smooth(stack[sp] != 0);
 
                 return false;
             });
@@ -3087,9 +3683,9 @@ namespace LiquidPlayer.Kernal
 
             addMethod(liquidClass, "Constructor", "(string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var filename = Liquid.Object.GetString(id, stack[sp]);
+                var path = Liquid.Object.GetString(stack[sp]);
 
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Image(id, filename);
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Image(id, path);
 
                 return false;
             });
@@ -3103,9 +3699,16 @@ namespace LiquidPlayer.Kernal
 
             addMethod(liquidClass, "Constructor", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var filename = Liquid.Object.GetString(id, stack[sp]);
-
                 Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Texture(id);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "CellMachine", "(int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var texture = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Texture;
+
+                texture.CellMachine(stack[sp], stack[sp - 1]);
 
                 return false;
             });
@@ -3123,42 +3726,284 @@ namespace LiquidPlayer.Kernal
             {
                 var texture = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Texture;
 
-                var size = Liquid.Object.GetDouble(id, stack[sp]);
+                var size = Liquid.Object.GetDouble(stack[sp]);
 
                 texture.Particle(size);
 
                 return false;
             });
+
+            addMethod(liquidClass, "PerlinNoise", "(int,int,int,int,int,boolean)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var texture = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Texture;
+
+                texture.PerlinNoise(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4], (stack[sp - 5] != 0) ? true : false);
+
+                return false;
+            });
         }
 
-        private void bindBanner()
+        private void bindRaster()
         {
-            var liquidClass = Program.ClassManager.Find("Banner");
+            var liquidClass = Program.ClassManager.Find("Raster");
 
-            Program.ClassManager.Extends(liquidClass, LiquidClass.Bitmap);
+            Program.ClassManager.Extends(liquidClass, LiquidClass.Object);
 
-            //addMethod(liquidClass, "Constructor", "(string,float,string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            //{
-            //    var fontName = Liquid.Object.GetString(id, stack[sp]);
-
-            //    var fontSize = Util.Int2Float(stack[sp - 1]);
-
-            //    var caption = Liquid.Object.GetString(id, stack[sp - 2]);
-
-            //    Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Banner(id, fontName, fontSize, 0, caption);
-
-            //    return false;
-            //});
-
-            addMethod(liquidClass, "Constructor", "(string,float,int,string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "Constructor", "(Bitmap)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var fontName = Liquid.Object.GetString(id, stack[sp]);
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Raster(a0, stack[sp]);
 
-                var fontSize = Util.Int2Float(stack[sp - 1]);
+                return false;
+            });
 
-                var caption = Liquid.Object.GetString(id, stack[sp - 3]);
+            addMethod(liquidClass, "Constructor", "(Canvas)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var canvas = Program.Exec.ObjectManager[stack[sp]].LiquidObject as Liquid.Canvas;
 
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Banner(id, fontName, fontSize, stack[sp - 2], caption);
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Raster(a0, canvas.BitmapId);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "BezierCurve", "(int,int,int,int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.BezierCurve(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4], stack[sp - 5], stack[sp - 6], stack[sp - 7]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Circle", "(int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.Circle(stack[sp], stack[sp - 1], stack[sp - 2]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "CircleFill", "(int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.CircleFill(stack[sp], stack[sp - 1], stack[sp - 2]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Clip", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.Clip(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Ellipse", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.Ellipse(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "EllipseFill", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.EllipseFill(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Fill", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.Fill((uint)stack[sp]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "FloodFill", "(int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.FloodFill(stack[sp], stack[sp - 1]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "hLine", "(int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.hLine(stack[sp], stack[sp - 1], stack[sp - 2]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Ink", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.InkColor = (uint)stack[sp];
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Line", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.Line(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "LineStipple", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.LineStipple = (uint)stack[sp];
+
+                return false;
+            });
+
+            addMethod(liquidClass, "PixelOperator", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.PixelOperator = (PixelOperator)stack[sp];
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Plot", "(int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.Plot(stack[sp], stack[sp - 1]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Point", "(int,int)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                a0 = (int)raster.Point(stack[sp], stack[sp - 1]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Quad", "(int,int,int,int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.Quad(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4], stack[sp - 5], stack[sp - 6], stack[sp - 7]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "QuadFill", "(int,int,int,int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.QuadFill(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4], stack[sp - 5], stack[sp - 6], stack[sp - 7]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Radial", "(int,int,float,float)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.Radial(stack[sp], stack[sp - 1], Util.Int2Float(stack[sp - 2]), Util.Int2Float(stack[sp - 3]));
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Rectangle", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.Rectangle(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "RectangleFill", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.RectangleFill(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Roll", "(int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.Scroll(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], (ScrollDirection)stack[sp - 4], wrap: true);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "RoundedRectangle", "(int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.RoundedRectangle(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "RoundedRectangleFill", "(int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.RoundedRectangleFill(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Scroll", "(int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.Scroll(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], (ScrollDirection)stack[sp - 4], wrap: false);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Triangle", "(int,int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.Triangle(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4], stack[sp - 5]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "TriangleFill", "(int,int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.TriangleFill(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4], stack[sp - 5]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "vLine", "(int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var raster = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Raster;
+
+                raster.vLine(stack[sp], stack[sp - 1], stack[sp - 2]);
 
                 return false;
             });
@@ -3169,276 +4014,17 @@ namespace LiquidPlayer.Kernal
             var liquidClass = Program.ClassManager.Find("Brush");
 
             Program.ClassManager.Extends(liquidClass, LiquidClass.Object);
-
-            addMethod(liquidClass, "Constructor", "(Bitmap)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Brush(a0, stack[sp]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Constructor", "(Canvas)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var canvas = Program.Exec.ObjectManager[stack[sp]].LiquidObject as Liquid.Canvas;
-
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Brush(a0, canvas.BitmapId);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "BezierCurve", "(int,int,int,int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.BezierCurve(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4], stack[sp - 5], stack[sp - 6], stack[sp - 7]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Circle", "(int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.Circle(stack[sp], stack[sp - 1], stack[sp - 2]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "CircleFill", "(int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.CircleFill(stack[sp], stack[sp - 1], stack[sp - 2]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Clip", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.Clip(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Ellipse", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.Ellipse(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "EllipseFill", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.EllipseFill(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Fill", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.Fill((uint)stack[sp]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "FloodFill", "(int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.FloodFill(stack[sp], stack[sp - 1]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "hLine", "(int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.hLine(stack[sp], stack[sp - 1], stack[sp - 2]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Ink", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.InkColor = (uint)stack[sp];
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Line", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.Line(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "LineStipple", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.LineStipple = (uint)stack[sp];
-
-                return false;
-            });
-
-            addMethod(liquidClass, "PixelOperator", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.PixelOperator = (PixelOperator)stack[sp];
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Plot", "(int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.Plot(stack[sp], stack[sp - 1]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Point", "(int,int)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                a0 = (int)brush.Point(stack[sp], stack[sp - 1]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Quad", "(int,int,int,int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.Quad(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4], stack[sp - 5], stack[sp - 6], stack[sp - 7]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "QuadFill", "(int,int,int,int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.QuadFill(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4], stack[sp - 5], stack[sp - 6], stack[sp - 7]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Radial", "(int,int,float,float)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.Radial(stack[sp], stack[sp - 1], Util.Int2Float(stack[sp - 2]), Util.Int2Float(stack[sp - 3]));
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Rectangle", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.Rectangle(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "RectangleFill", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.RectangleFill(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Roll", "(int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.Scroll(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], (ScrollDirection)stack[sp - 4], 1, true);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "RoundedRectangle", "(int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.RoundedRectangle(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "RoundedRectangleFill", "(int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.RoundedRectangleFill(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Scroll", "(int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.Scroll(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], (ScrollDirection)stack[sp - 4], 1, false);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Triangle", "(int,int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.Triangle(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4], stack[sp - 5]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "TriangleFill", "(int,int,int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.TriangleFill(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3], stack[sp - 4], stack[sp - 5]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "vLine", "(int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var brush = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Brush;
-
-                brush.vLine(stack[sp], stack[sp - 1], stack[sp - 2]);
-
-                return false;
-            });
         }
 
         private void bindPen()
         {
             var liquidClass = Program.ClassManager.Find("Pen");
 
-            Program.ClassManager.Extends(liquidClass, LiquidClass.Brush);
+            Program.ClassManager.Extends(liquidClass, LiquidClass.Raster);
 
             addMethod(liquidClass, "Constructor", "(Bitmap)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Pen(a0, stack[sp], Program.Exec.ObjectManager.ConsoleFontId);
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Pen(a0, stack[sp], Program.Exec.ObjectManager.SystemCharacterSetId);
 
                 return false;
             });
@@ -3447,7 +4033,7 @@ namespace LiquidPlayer.Kernal
             {
                 var canvas = Program.Exec.ObjectManager[stack[sp]].LiquidObject as Liquid.Canvas;
 
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Pen(a0, canvas.BitmapId, Program.Exec.ObjectManager.ConsoleFontId);
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Pen(a0, canvas.BitmapId, Program.Exec.ObjectManager.SystemCharacterSetId);
 
                 return false;
             });
@@ -3456,7 +4042,7 @@ namespace LiquidPlayer.Kernal
             {
                 var pen = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Pen;
 
-                var text = Liquid.Object.GetString(id, stack[sp - 2]);
+                var text = Liquid.Object.GetString(stack[sp - 2]);
 
                 pen.PrintAt(stack[sp], stack[sp - 1], text);
 
@@ -3468,7 +4054,7 @@ namespace LiquidPlayer.Kernal
         {
             var liquidClass = Program.ClassManager.Find("Turtle");
 
-            Program.ClassManager.Extends(liquidClass, LiquidClass.Brush);
+            Program.ClassManager.Extends(liquidClass, LiquidClass.Raster);
 
             addMethod(liquidClass, "Constructor", "(Bitmap)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
@@ -3517,7 +4103,7 @@ namespace LiquidPlayer.Kernal
             {
                 var turtle = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Turtle;
 
-                var distance = Liquid.Object.GetDouble(id, stack[sp]);
+                var distance = Liquid.Object.GetDouble(stack[sp]);
 
                 turtle.GoBackward(distance);
 
@@ -3528,7 +4114,7 @@ namespace LiquidPlayer.Kernal
             {
                 var turtle = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Turtle;
 
-                var distance = Liquid.Object.GetDouble(id, stack[sp]);
+                var distance = Liquid.Object.GetDouble(stack[sp]);
 
                 turtle.GoForward(distance);
 
@@ -3548,9 +4134,9 @@ namespace LiquidPlayer.Kernal
             {
                 var turtle = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Turtle;
 
-                var x = Liquid.Object.GetDouble(id, stack[sp]);
+                var x = Liquid.Object.GetDouble(stack[sp]);
 
-                var y = Liquid.Object.GetDouble(id, stack[sp - 1]);
+                var y = Liquid.Object.GetDouble(stack[sp - 1]);
 
                 turtle.MoveTo(x, y);
 
@@ -3579,7 +4165,7 @@ namespace LiquidPlayer.Kernal
             {
                 var turtle = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Turtle;
 
-                var heading = Liquid.Object.GetDouble(id, stack[sp]);
+                var heading = Liquid.Object.GetDouble(stack[sp]);
 
                 turtle.SetHeading(heading);
 
@@ -3590,7 +4176,7 @@ namespace LiquidPlayer.Kernal
             {
                 var turtle = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Turtle;
 
-                var degrees = Liquid.Object.GetDouble(id, stack[sp]);
+                var degrees = Liquid.Object.GetDouble(stack[sp]);
 
                 turtle.TurnLeft(degrees);
 
@@ -3601,7 +4187,7 @@ namespace LiquidPlayer.Kernal
             {
                 var turtle = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Turtle;
 
-                var degrees = Liquid.Object.GetDouble(id, stack[sp]);
+                var degrees = Liquid.Object.GetDouble(stack[sp]);
 
                 turtle.TurnRight(degrees);
 
@@ -3613,7 +4199,7 @@ namespace LiquidPlayer.Kernal
         {
             var liquidClass = Program.ClassManager.Find("Filter");
 
-            Program.ClassManager.Extends(liquidClass, LiquidClass.Brush);
+            Program.ClassManager.Extends(liquidClass, LiquidClass.Object);
 
             addMethod(liquidClass, "Constructor", "(Bitmap)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
@@ -3636,6 +4222,33 @@ namespace LiquidPlayer.Kernal
                 var filter = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Filter;
 
                 filter.Dilate();
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GrayScale", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var filter = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Filter;
+
+                filter.GrayScale();
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Kaleidoscope", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var filter = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Filter;
+
+                filter.Kaleidoscope(stack[sp]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "MakeTileable", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var filter = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Filter;
+
+                filter.MakeTileable(stack[sp]);
 
                 return false;
             });
@@ -3676,47 +4289,20 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
+            addMethod(liquidClass, "Sepia", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var filter = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Filter;
+
+                filter.Sepia();
+
+                return false;
+            });
+
             addMethod(liquidClass, "Sharpen", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var filter = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Filter;
 
                 filter.Sharpen();
-
-                return false;
-            });
-        }
-
-        private void bindFont()
-        {
-            var liquidClass = Program.ClassManager.Find("Font");
-
-            Program.ClassManager.Extends(liquidClass, LiquidClass.Object);
-
-            addMethod(liquidClass, "GetWidth", "(byte)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var font = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Font;
-
-                a0 = font.GetWidth((byte)stack[sp]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "GetWidth", "(string)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var font = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Font;
-
-                var text = Liquid.Object.GetString(id, stack[sp]);
-
-                a0 = font.GetWidth(text);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "GetHeight", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var font = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Font;
-
-                a0 = font.GetHeight();
 
                 return false;
             });
@@ -3749,22 +4335,60 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
-            addMethod(liquidClass, "Clear", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "Clear", "(byte)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var characterSet = Program.Exec.ObjectManager[id].LiquidObject as Liquid.CharacterSet;
 
-                characterSet.Clear(stack[sp]);
+                characterSet.Clear((byte)stack[sp]);
 
                 return false;
             });
 
-            addMethod(liquidClass, "CustomCharacter", "(int,int,string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "CustomCharacter", "(byte,int,string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var characterSet = Program.Exec.ObjectManager[id].LiquidObject as Liquid.CharacterSet;
 
-                var data = Liquid.Object.GetString(id, stack[sp - 2]);
+                var data = Liquid.Object.GetString(stack[sp - 2]);
 
-                characterSet.CustomCharacter(stack[sp], stack[sp - 1], data);
+                characterSet.CustomCharacter((byte)stack[sp], stack[sp - 1], data);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetHeight", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var characterSet = Program.Exec.ObjectManager[id].LiquidObject as Liquid.CharacterSet;
+
+                a0 = characterSet.GetHeight();
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetWidth", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var characterSet = Program.Exec.ObjectManager[id].LiquidObject as Liquid.CharacterSet;
+
+                a0 = characterSet.GetWidth();
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetWidth", "(string)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var characterSet = Program.Exec.ObjectManager[id].LiquidObject as Liquid.CharacterSet;
+
+                var text = Liquid.Object.GetString(stack[sp]);
+
+                a0 = characterSet.GetWidth(text);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "IsAvailable", "(byte)", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var characterSet = Program.Exec.ObjectManager[id].LiquidObject as Liquid.CharacterSet;
+
+                a0 = (characterSet.IsAvailable[stack[sp]]) ? 1 : 0;
 
                 return false;
             });
@@ -3778,20 +4402,20 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
-            addMethod(liquidClass, "MapCharacter", "(int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "MapCharacter", "(byte,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var characterSet = Program.Exec.ObjectManager[id].LiquidObject as Liquid.CharacterSet;
 
-                characterSet.MapCharacter(stack[sp], stack[sp - 1]);
+                characterSet.MapCharacter((byte)stack[sp], stack[sp - 1]);
 
                 return false;
             });
 
-            addMethod(liquidClass, "MapCharacters", "(int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "MapCharacters", "(byte,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var characterSet = Program.Exec.ObjectManager[id].LiquidObject as Liquid.CharacterSet;
 
-                characterSet.MapCharacters(stack[sp], stack[sp - 1], stack[sp - 2]);
+                characterSet.MapCharacters((byte)stack[sp], stack[sp - 1], stack[sp - 2]);
 
                 return false;
             });
@@ -3800,74 +4424,81 @@ namespace LiquidPlayer.Kernal
             {
                 var characterSet = Program.Exec.ObjectManager[id].LiquidObject as Liquid.CharacterSet;
 
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var text = Liquid.Object.GetString(stack[sp]);
 
                 characterSet.MapTheseCharacters(text, stack[sp - 1]);
 
                 return false;
             });
 
-            addMethod(liquidClass, "Palette", "(int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "Palette", "(byte,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var characterSet = Program.Exec.ObjectManager[id].LiquidObject as Liquid.CharacterSet;
 
-                characterSet.Palette(stack[sp], (uint)stack[sp - 1]);
+                characterSet.Palette((byte)stack[sp], (uint)stack[sp - 1]);
 
                 return false;
             });
 
-            addMethod(liquidClass, "Roll", "(int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "Roll", "(byte,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var characterSet = Program.Exec.ObjectManager[id].LiquidObject as Liquid.CharacterSet;
 
-                characterSet.Scroll(stack[sp], (ScrollDirection)stack[sp - 1], 1, true);
+                characterSet.Scroll((byte)stack[sp], (ScrollDirection)stack[sp - 1], wrap: true);
 
                 return false;
             });
 
-            addMethod(liquidClass, "Scroll", "(int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "Scroll", "(byte,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 var characterSet = Program.Exec.ObjectManager[id].LiquidObject as Liquid.CharacterSet;
 
-                characterSet.Scroll(stack[sp], (ScrollDirection)stack[sp - 1], 1, false);
+                characterSet.Scroll((byte)stack[sp], (ScrollDirection)stack[sp - 1], wrap: false);
 
                 return false;
             });
         }
 
-        private void bindMonoSpacedFont()
+        private void bindFont()
         {
-            var liquidClass = Program.ClassManager.Find("MonoSpacedFont");
+            var liquidClass = Program.ClassManager.Find("Font");
 
-            Program.ClassManager.Extends(liquidClass, LiquidClass.Font);
+            Program.ClassManager.Extends(liquidClass, LiquidClass.Object);
 
-            //addMethod(liquidClass, "Constructor", "(string,float)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            //{
-            //    var fontName = Liquid.Object.GetString(id, stack[sp]);
-
-            //    var fontSize = Util.Int2Float(stack[sp - 1]);
-
-            //    Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.MonoSpacedFont(id, fontName, fontSize, 0);
-
-            //    return false;
-            //});
-
-            addMethod(liquidClass, "Constructor", "(string,float,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "Constructor", "(string,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var fontName = Liquid.Object.GetString(id, stack[sp]);
+                var path = Liquid.Object.GetString(stack[sp]);
 
-                var fontSize = Util.Int2Float(stack[sp - 1]);
-
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.MonoSpacedFont(id, fontName, fontSize, stack[sp - 2]);
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Font(id, path, stack[sp - 1]);
 
                 return false;
             });
 
-            addMethod(liquidClass, "GetBitmap", "()", LiquidClass.Bitmap, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "GetHeight", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var monoSpacedFont = Program.Exec.ObjectManager[id].LiquidObject as Liquid.MonoSpacedFont;
+                var font = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Font;
 
-                a0 = monoSpacedFont.GetBitmap();
+                a0 = font.GetHeight();
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetWidth", "(byte)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var font = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Font;
+
+                a0 = font.GetWidth((byte)stack[sp]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetWidth", "(string)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var font = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Font;
+
+                var text = Liquid.Object.GetString(stack[sp]);
+
+                a0 = font.GetWidth(text);
 
                 return false;
             });
@@ -3888,7 +4519,7 @@ namespace LiquidPlayer.Kernal
 
             addMethod(liquidClass, "Constructor", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var characterSetId = Program.Exec.ObjectManager.ConsoleFontId;
+                var characterSetId = Program.Exec.ObjectManager.SystemCharacterSetId;
 
                 var characterSet = Program.Exec.ObjectManager[characterSetId].LiquidObject as Liquid.CharacterSet;
 
@@ -3908,7 +4539,7 @@ namespace LiquidPlayer.Kernal
             {
                 var console = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Console;
 
-                console.AutoScroll = (stack[sp] != 0) ? true : false;
+                console.AutoScroll = (stack[sp] != 0);
 
                 return false;
             });
@@ -3917,7 +4548,7 @@ namespace LiquidPlayer.Kernal
             {
                 var console = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Console;
 
-                console.Blink((stack[sp] != 0) ? true : false);
+                console.Blink(stack[sp] != 0);
 
                 return false;
             });
@@ -3926,7 +4557,7 @@ namespace LiquidPlayer.Kernal
             {
                 var console = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Console;
 
-                console.Bold((stack[sp] != 0) ? true : false);
+                console.Bold(stack[sp] != 0);
 
                 return false;
             });
@@ -3954,6 +4585,24 @@ namespace LiquidPlayer.Kernal
                 var console = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Console;
 
                 a0 = console.CursorY;
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetHeight", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var console = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Console;
+
+                a0 = console.Height;
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetWidth", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var console = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Console;
+
+                a0 = console.Width;
 
                 return false;
             });
@@ -3992,6 +4641,8 @@ namespace LiquidPlayer.Kernal
 
             addMethod(liquidClass, "InputNumber", "()", LiquidClass.Double, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
+                var task = Program.Exec.ObjectManager.GetTask(id);
+
                 var console = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Console;
 
                 var wait = console.InputNumber();
@@ -4002,9 +4653,7 @@ namespace LiquidPlayer.Kernal
                     {
                         if (!double.TryParse(console.InputBuffer, out d0))
                         {
-                            var task = Program.Exec.ObjectManager.GetTask(id);
-
-                            task.Throw(ExceptionCode.Denied);
+                            task.RaiseError(ErrorCode.Denied);
                             return false;
                         }
                     }
@@ -4041,7 +4690,7 @@ namespace LiquidPlayer.Kernal
             {
                 var console = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Console;
 
-                var text = Convert.ToString(Liquid.Object.GetLong(id, stack[sp]));
+                var text = Convert.ToString(Liquid.Object.GetLong(stack[sp]));
 
                 console.Print(text);
 
@@ -4052,7 +4701,7 @@ namespace LiquidPlayer.Kernal
             {
                 var console = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Console;
 
-                var text = Convert.ToString(Liquid.Object.GetDouble(id, stack[sp]));
+                var text = Convert.ToString(Liquid.Object.GetDouble(stack[sp]));
 
                 console.Print(text);
 
@@ -4063,7 +4712,7 @@ namespace LiquidPlayer.Kernal
             {
                 var console = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Console;
 
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var text = Liquid.Object.GetString(stack[sp]);
 
                 console.Print(text);
 
@@ -4094,7 +4743,7 @@ namespace LiquidPlayer.Kernal
             {
                 var console = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Console;
 
-                var text = Convert.ToString(Liquid.Object.GetLong(id, stack[sp]));
+                var text = Convert.ToString(Liquid.Object.GetLong(stack[sp]));
 
                 console.PrintLine(text);
 
@@ -4105,7 +4754,7 @@ namespace LiquidPlayer.Kernal
             {
                 var console = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Console;
 
-                var text = Convert.ToString(Liquid.Object.GetDouble(id, stack[sp]));
+                var text = Convert.ToString(Liquid.Object.GetDouble(stack[sp]));
 
                 console.PrintLine(text);
 
@@ -4116,7 +4765,7 @@ namespace LiquidPlayer.Kernal
             {
                 var console = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Console;
 
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var text = Liquid.Object.GetString(stack[sp]);
 
                 console.PrintLine(text);
 
@@ -4136,7 +4785,7 @@ namespace LiquidPlayer.Kernal
             {
                 var console = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Console;
 
-                console.Underline((stack[sp] != 0) ? true : false);
+                console.Underline(stack[sp] != 0);
 
                 return false;
             });
@@ -4147,17 +4796,6 @@ namespace LiquidPlayer.Kernal
             var liquidClass = Program.ClassManager.Find("TileMap");
 
             Program.ClassManager.Extends(liquidClass, LiquidClass.View);
-
-            addMethod(liquidClass, "Constructor", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var characterSetId = Program.Exec.ObjectManager.ConsoleFontId;
-
-                var characterSet = Program.Exec.ObjectManager[characterSetId].LiquidObject as Liquid.CharacterSet;
-
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.TileMap(a0, Program.ScreenWidth / characterSet.TileWidth, Program.ScreenHeight / characterSet.TileHeight, characterSetId);
-
-                return false;
-            });
 
             addMethod(liquidClass, "Constructor", "(CharacterSet)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
@@ -4170,16 +4808,7 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
-            addMethod(liquidClass, "Constructor", "(int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var characterSetId = Program.Exec.ObjectManager.ConsoleFontId;
-
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.TileMap(a0, stack[sp], stack[sp - 1], characterSetId);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Constructor", "(int,int,CharacterSet)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addMethod(liquidClass, "Constructor", "(CharacterSet,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
                 Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.TileMap(a0, stack[sp], stack[sp - 1], stack[sp - 2]);
 
@@ -4190,7 +4819,7 @@ namespace LiquidPlayer.Kernal
             {
                 var tileMap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.TileMap;
 
-                tileMap.AutoScroll = (stack[sp] != 0) ? true : false;
+                tileMap.AutoScroll = (stack[sp] != 0);
 
                 return false;
             });
@@ -4209,6 +4838,42 @@ namespace LiquidPlayer.Kernal
                 var tileMap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.TileMap;
 
                 tileMap.InkColor = (uint)stack[sp];
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetCursorX", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var tileMap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.TileMap;
+
+                a0 = tileMap.CursorX;
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetCursorY", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var tileMap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.TileMap;
+
+                a0 = tileMap.CursorY;
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetHeight", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var tileMap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.TileMap;
+
+                a0 = tileMap.Height;
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetWidth", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var tileMap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.TileMap;
+
+                a0 = tileMap.Width;
 
                 return false;
             });
@@ -4281,7 +4946,7 @@ namespace LiquidPlayer.Kernal
             {
                 var tileMap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.TileMap;
 
-                var text = Convert.ToString(Liquid.Object.GetLong(id, stack[sp]));
+                var text = Convert.ToString(Liquid.Object.GetLong(stack[sp]));
 
                 tileMap.Print(text);
 
@@ -4292,7 +4957,7 @@ namespace LiquidPlayer.Kernal
             {
                 var tileMap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.TileMap;
 
-                var text = Convert.ToString(Liquid.Object.GetDouble(id, stack[sp]));
+                var text = Convert.ToString(Liquid.Object.GetDouble(stack[sp]));
 
                 tileMap.Print(text);
 
@@ -4303,7 +4968,7 @@ namespace LiquidPlayer.Kernal
             {
                 var tileMap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.TileMap;
 
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var text = Liquid.Object.GetString(stack[sp]);
 
                 tileMap.Print(text);
 
@@ -4334,7 +4999,7 @@ namespace LiquidPlayer.Kernal
             {
                 var tileMap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.TileMap;
 
-                var text = Convert.ToString(Liquid.Object.GetLong(id, stack[sp]));
+                var text = Convert.ToString(Liquid.Object.GetLong(stack[sp]));
 
                 tileMap.PrintLine(text);
 
@@ -4345,7 +5010,7 @@ namespace LiquidPlayer.Kernal
             {
                 var tileMap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.TileMap;
 
-                var text = Convert.ToString(Liquid.Object.GetDouble(id, stack[sp]));
+                var text = Convert.ToString(Liquid.Object.GetDouble(stack[sp]));
 
                 tileMap.PrintLine(text);
 
@@ -4356,7 +5021,7 @@ namespace LiquidPlayer.Kernal
             {
                 var tileMap = Program.Exec.ObjectManager[id].LiquidObject as Liquid.TileMap;
 
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var text = Liquid.Object.GetString(stack[sp]);
 
                 tileMap.PrintLine(text);
 
@@ -4378,6 +5043,47 @@ namespace LiquidPlayer.Kernal
             var liquidClass = Program.ClassManager.Find("CopperBars");
 
             Program.ClassManager.Extends(liquidClass, LiquidClass.View);
+
+            addMethod(liquidClass, "Constructor", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.CopperBars(a0, Program.ScreenHeight);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Constructor", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.CopperBars(a0, stack[sp]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "RollDown", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var copperBars = Program.Exec.ObjectManager[id].LiquidObject as Liquid.CopperBars;
+
+                copperBars.RollDown();
+
+                return false;
+            });
+
+            addMethod(liquidClass, "RollUp", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var copperBars = Program.Exec.ObjectManager[id].LiquidObject as Liquid.CopperBars;
+
+                copperBars.RollUp();
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Set", "(int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var copperBars = Program.Exec.ObjectManager[id].LiquidObject as Liquid.CopperBars;
+
+                copperBars.Set(stack[sp], (uint)stack[sp - 1]);
+
+                return false;
+            });
         }
 
         private void bindCanvas()
@@ -4411,9 +5117,7 @@ namespace LiquidPlayer.Kernal
             {
                 var canvas = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Canvas;
 
-                var bitmap = Program.Exec.ObjectManager[canvas.BitmapId].LiquidObject as Liquid.Bitmap;
-
-                bitmap.Clear();
+                canvas.Clear();
 
                 return false;
             });
@@ -4422,9 +5126,25 @@ namespace LiquidPlayer.Kernal
             {
                 var canvas = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Canvas;
 
-                var bitmap = Program.Exec.ObjectManager[canvas.BitmapId].LiquidObject as Liquid.Bitmap;
+                canvas.DoubleBuffer();
 
-                bitmap.DoubleBuffer();
+                return false;
+            });
+
+            addMethod(liquidClass, "GetHeight", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var canvas = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Canvas;
+
+                a0 = canvas.Height;
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetWidth", "()", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var canvas = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Canvas;
+
+                a0 = canvas.Width;
 
                 return false;
             });
@@ -4433,9 +5153,7 @@ namespace LiquidPlayer.Kernal
             {
                 var canvas = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Canvas;
 
-                var bitmap = Program.Exec.ObjectManager[canvas.BitmapId].LiquidObject as Liquid.Bitmap;
-
-                a0 = (int)bitmap.Peek(stack[sp]);
+                a0 = (int)canvas.Peek(stack[sp]);
 
                 return false;
             });
@@ -4444,9 +5162,7 @@ namespace LiquidPlayer.Kernal
             {
                 var canvas = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Canvas;
 
-                var bitmap = Program.Exec.ObjectManager[canvas.BitmapId].LiquidObject as Liquid.Bitmap;
-
-                bitmap.Poke(stack[sp], (uint)stack[sp - 1]);
+                canvas.Poke(stack[sp], (uint)stack[sp - 1]);
 
                 return false;
             });
@@ -4455,9 +5171,7 @@ namespace LiquidPlayer.Kernal
             {
                 var canvas = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Canvas;
 
-                var bitmap = Program.Exec.ObjectManager[canvas.BitmapId].LiquidObject as Liquid.Bitmap;
-
-                bitmap.SingleBuffer();
+                canvas.SingleBuffer();
 
                 return false;
             });
@@ -4466,9 +5180,7 @@ namespace LiquidPlayer.Kernal
             {
                 var canvas = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Canvas;
 
-                var bitmap = Program.Exec.ObjectManager[canvas.BitmapId].LiquidObject as Liquid.Bitmap;
-
-                bitmap.Smooth((stack[sp] != 0) ? true : false);
+                canvas.Smooth(stack[sp] != 0);
 
                 return false;
             });
@@ -4477,85 +5189,10 @@ namespace LiquidPlayer.Kernal
             {
                 var canvas = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Canvas;
 
-                var bitmap = Program.Exec.ObjectManager[canvas.BitmapId].LiquidObject as Liquid.Bitmap;
-
-                bitmap.SwapBuffers();
+                canvas.SwapBuffers();
 
                 return false;
             });
-        }
-
-        private void bindFBO()
-        {
-            var liquidClass = Program.ClassManager.Find("FBO");
-
-            Program.ClassManager.Extends(liquidClass, LiquidClass.View);
-
-            addMethod(liquidClass, "Constructor", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.FBO(a0, Program.ScreenWidth, Program.ScreenHeight);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Constructor", "(int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.FBO(a0, stack[sp], stack[sp - 1]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Clear", "()", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var fbo = Program.Exec.ObjectManager[id].LiquidObject as Liquid.FBO;
-
-                fbo.Clear();
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Ink", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var fbo = Program.Exec.ObjectManager[id].LiquidObject as Liquid.FBO;
-
-                fbo.Ink((uint)stack[sp]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Line", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var fbo = Program.Exec.ObjectManager[id].LiquidObject as Liquid.FBO;
-
-                fbo.Line(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "Plot", "(int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var fbo = Program.Exec.ObjectManager[id].LiquidObject as Liquid.FBO;
-
-                fbo.Plot(stack[sp], stack[sp - 1]);
-
-                return false;
-            });
-
-            addMethod(liquidClass, "RectangleFill", "(int,int,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var fbo = Program.Exec.ObjectManager[id].LiquidObject as Liquid.FBO;
-
-                fbo.RectangleFill(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
-
-                return false;
-            });
-        }
-
-        private void bindFBO3D()
-        {
-            var liquidClass = Program.ClassManager.Find("Perspective");
-
-            Program.ClassManager.Extends(liquidClass, LiquidClass.View);
         }
 
         private void bindSprite()
@@ -4581,24 +5218,87 @@ namespace LiquidPlayer.Kernal
             });
         }
 
+        private void bindTiles()
+        {
+            var liquidClass = Program.ClassManager.Find("Tiles");
+
+            Program.ClassManager.Extends(liquidClass, LiquidClass.GEL);
+
+            addMethod(liquidClass, "Constructor", "(string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var characterSetId = Program.Exec.ObjectManager.Copy(Program.Exec.ObjectManager.SystemCharacterSetId);
+
+                var caption = Liquid.Object.GetString(stack[sp]);
+
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Tiles(a0, characterSetId, caption);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Constructor", "(CharacterSet,string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var caption = Liquid.Object.GetString(stack[sp - 1]);
+
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Tiles(a0, stack[sp], caption);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "Constructor", "(CharacterSet,string,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var caption = Liquid.Object.GetString(stack[sp - 1]);
+
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Text(a0, stack[sp], caption, stack[sp - 2], stack[sp - 3]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "GetText", "()", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var tiles = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Tiles;
+
+                a0 = Liquid.Object.NewString(id, tiles.Caption);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "hAlign", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var tiles = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Tiles;
+
+                tiles.hAlign(stack[sp]);
+
+                return false;
+            });
+
+            addMethod(liquidClass, "SetText", "(string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var tiles = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Tiles;
+
+                tiles.SetCaption(Liquid.Object.GetString(stack[sp]));
+
+                return false;
+            });
+
+            addMethod(liquidClass, "vAlign", "(int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var tiles = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Tiles;
+
+                tiles.vAlign(stack[sp]);
+
+                return false;
+            });
+        }
+
         private void bindText()
         {
             var liquidClass = Program.ClassManager.Find("Text");
 
             Program.ClassManager.Extends(liquidClass, LiquidClass.GEL);
 
-            addMethod(liquidClass, "Constructor", "(string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                var caption = Liquid.Object.GetString(id, stack[sp]);
-
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Text(a0, 0, caption);
-
-                return false;
-            });
-
             addMethod(liquidClass, "Constructor", "(Font,string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var caption = Liquid.Object.GetString(id, stack[sp - 1]);
+                var caption = Liquid.Object.GetString(stack[sp - 1]);
 
                 Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Text(a0, stack[sp], caption);
 
@@ -4607,7 +5307,7 @@ namespace LiquidPlayer.Kernal
 
             addMethod(liquidClass, "Constructor", "(Font,string,int,int)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var caption = Liquid.Object.GetString(id, stack[sp - 1]);
+                var caption = Liquid.Object.GetString(stack[sp - 1]);
 
                 Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Text(a0, stack[sp], caption, stack[sp - 2], stack[sp - 3]);
 
@@ -4636,7 +5336,7 @@ namespace LiquidPlayer.Kernal
             {
                 var text = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Text;
 
-                text.SetCaption(Liquid.Object.GetString(id, stack[sp]));
+                text.SetCaption(Liquid.Object.GetString(stack[sp]));
 
                 return false;
             });
@@ -4649,13 +5349,6 @@ namespace LiquidPlayer.Kernal
 
                 return false;
             });
-        }
-
-        private void bindLayer()
-        {
-            var liquidClass = Program.ClassManager.Find("Layer");
-
-            Program.ClassManager.Extends(liquidClass, LiquidClass.GEL);
         }
 
         private void bindAudio()
@@ -4673,9 +5366,9 @@ namespace LiquidPlayer.Kernal
 
             addMethod(liquidClass, "Constructor", "(string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var filename = Liquid.Object.GetString(id, stack[sp]);
+                var path = Liquid.Object.GetString(stack[sp]);
 
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Sound(a0, filename);
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Sound(a0, path);
 
                 return false;
             });
@@ -4716,9 +5409,9 @@ namespace LiquidPlayer.Kernal
 
             addMethod(liquidClass, "Constructor", "(string)", LiquidClass.None, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var filename = Liquid.Object.GetString(id, stack[sp]);
+                var path = Liquid.Object.GetString(stack[sp]);
 
-                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Music(a0, filename);
+                Program.Exec.ObjectManager[a0].LiquidObject = new Liquid.Music(a0, path);
 
                 return false;
             });
@@ -4759,7 +5452,7 @@ namespace LiquidPlayer.Kernal
             {
                 var voice = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Voice;
 
-                var textToSpeak = Liquid.Object.GetString(id, stack[sp]);
+                var textToSpeak = Liquid.Object.GetString(stack[sp]);
 
                 voice.Speak(textToSpeak);
 
@@ -4770,75 +5463,13 @@ namespace LiquidPlayer.Kernal
             {
                 var voice = Program.Exec.ObjectManager[id].LiquidObject as Liquid.Voice;
 
-                var textToSpeak = Liquid.Object.GetString(id, stack[sp]);
+                var textToSpeak = Liquid.Object.GetString(stack[sp]);
 
                 voice.SpeakAsync(textToSpeak);
 
                 return false;
             });
         }
-
-
-
-        //bag[(int)LiquidClass.Host] = new Class("Host", LiquidClass.None);
-        //bag[(int)LiquidClass.Object] = new Class("Object", LiquidClass.None);
-        //bag[(int)LiquidClass.Message] = new Class("Message");
-        //bag[(int)LiquidClass.Task] = new Class("Task");
-        //bag[(int)LiquidClass.Exception] = new Class("Exception");
-        //bag[(int)LiquidClass.CommandLine] = new Class("CommandLine");
-        //bag[(int)LiquidClass.Program] = new Class("Program", LiquidClass.Task);
-        //bag[(int)LiquidClass.App] = new Class("App", LiquidClass.Task);
-        //bag[(int)LiquidClass.Applet] = new Class("Applet", LiquidClass.Task);
-        //bag[(int)LiquidClass.Shell] = new Class("Shell", LiquidClass.Applet);
-        //bag[(int)LiquidClass.Graphics] = new Class("Graphics");
-        //bag[(int)LiquidClass.Sound] = new Class("Sound");
-        //bag[(int)LiquidClass.GEL] = new Class("GEL");
-        //bag[(int)LiquidClass.Entity] = new Class("Entity", LiquidClass.GEL);
-        //bag[(int)LiquidClass.Clock] = new Class("Clock");
-        //bag[(int)LiquidClass.Math] = new Class("Math");
-        //bag[(int)LiquidClass.Keyboard] = new Class("Keyboard");
-        //bag[(int)LiquidClass.Mouse] = new Class("Mouse");
-        //bag[(int)LiquidClass.FileSystem] = new Class("FileSystem");
-        //bag[(int)LiquidClass.File] = new Class("File");
-        //bag[(int)LiquidClass.Stream] = new Class("Stream");
-        //bag[(int)LiquidClass.FileStream] = new Class("FileStream", LiquidClass.Stream);
-        //bag[(int)LiquidClass.Pipe] = new Class("Pipe", LiquidClass.Stream);
-        //bag[(int)LiquidClass.Internet] = new Class("Internet");
-        //bag[(int)LiquidClass.RNG] = new Class("RNG");
-        //bag[(int)LiquidClass.RegularExpression] = new Class("RegularExpression");
-        //bag[(int)LiquidClass.Collection] = new Class("Collection");
-        //bag[(int)LiquidClass.BitArray] = new Class("BitArray");
-        //bag[(int)LiquidClass.Array] = new Class("Array", LiquidClass.Collection);
-        //bag[(int)LiquidClass.HashTable] = new Class("HashTable", LiquidClass.Collection);
-        //bag[(int)LiquidClass.Stack] = new Class("Stack", LiquidClass.Collection);
-        //bag[(int)LiquidClass.Queue] = new Class("Queue", LiquidClass.Collection);
-        //bag[(int)LiquidClass.PriorityQueue] = new Class("PriorityQueue", LiquidClass.Collection);
-        //bag[(int)LiquidClass.List] = new Class("List", LiquidClass.Collection);
-        //bag[(int)LiquidClass.Color] = new Class("Color");
-        //bag[(int)LiquidClass.Bitmap] = new Class("Bitmap");
-        //bag[(int)LiquidClass.Image] = new Class("Image", LiquidClass.Bitmap);
-        //bag[(int)LiquidClass.Pen] = new Class("Pen");
-        //bag[(int)LiquidClass.Turtle] = new Class("Turtle");
-        //bag[(int)LiquidClass.Sprite] = new Class("Sprite", LiquidClass.Entity);
-        //bag[(int)LiquidClass.Font] = new Class("Font");
-        //bag[(int)LiquidClass.CharacterSet] = new Class("CharacterSet", LiquidClass.Font);
-        //bag[(int)LiquidClass.Text] = new Class("Text", LiquidClass.GEL);
-        //bag[(int)LiquidClass.View] = new Class("View");
-        //bag[(int)LiquidClass.Canvas] = new Class("Canvas", LiquidClass.View);
-        //bag[(int)LiquidClass.Console] = new Class("Console", LiquidClass.View);
-        //bag[(int)LiquidClass.Menu] = new Class("Menu", LiquidClass.Entity);
-        //bag[(int)LiquidClass.MenuBar] = new Class("MenuBar", LiquidClass.Entity);
-        //bag[(int)LiquidClass.TaskBar] = new Class("TaskBar", LiquidClass.Entity);
-        //bag[(int)LiquidClass.Control] = new Class("Control", LiquidClass.Entity);
-        //bag[(int)LiquidClass.HSB] = new Class("HSB", LiquidClass.Control);
-        //bag[(int)LiquidClass.VSB] = new Class("VSB", LiquidClass.Control);
-        //bag[(int)LiquidClass.Layer] = new Class("Layer", LiquidClass.Entity);
-        //bag[(int)LiquidClass.Window] = new Class("Window", LiquidClass.Layer);
-        //bag[(int)LiquidClass.ShellBuffer] = new Class("ShellBuffer", LiquidClass.GEL);
-        //bag[(int)LiquidClass.ShellWindow] = new Class("ShellWindow", LiquidClass.Window);
-        //bag[(int)LiquidClass.ShellStream] = new Class("ShellStream", LiquidClass.Stream);
-
-
 
         private void bindAPI()
         {
@@ -4912,9 +5543,18 @@ namespace LiquidPlayer.Kernal
                 return false;
             });
 
+            addFunction(LiquidClass.String, "Character", "(int)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var ch = (char)stack[sp];
+
+                a0 = Liquid.Object.NewString(id, "" + ch);
+
+                return false;
+            });
+
             addFunction(LiquidClass.String, "Count", "(string,int)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var text = Liquid.Object.GetString(stack[sp]);
 
                 var ch = stack[sp - 1];
 
@@ -4927,9 +5567,9 @@ namespace LiquidPlayer.Kernal
 
             addFunction(LiquidClass.String, "EndsWith", "(string,string)", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var text = Liquid.Object.GetString(stack[sp]);
 
-                var value = Liquid.Object.GetString(id, stack[sp - 1]);
+                var value = Liquid.Object.GetString(stack[sp - 1]);
 
                 a0 = (text.EndsWith(value)) ? 1 : 0;
 
@@ -4938,15 +5578,15 @@ namespace LiquidPlayer.Kernal
 
             addFunction(LiquidClass.String, "GetCharacter", "(string,int)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var task = Program.Exec.ObjectManager.GetTask(id);
+
+                var text = Liquid.Object.GetString(stack[sp]);
 
                 var index = stack[sp - 1];
 
                 if (index < 0 || index >= text.Length)
                 {
-                    var task = Program.Exec.ObjectManager.GetTask(id);
-
-                    task.Throw(ExceptionCode.IllegalQuantity);
+                    task.RaiseError(ErrorCode.IllegalQuantity);
                     return false;
                 }
 
@@ -4957,7 +5597,7 @@ namespace LiquidPlayer.Kernal
 
             addFunction(LiquidClass.String, "GetLength", "(string)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var text = Liquid.Object.GetString(stack[sp]);
 
                 a0 = text.Length;
 
@@ -4966,53 +5606,152 @@ namespace LiquidPlayer.Kernal
 
             addFunction(LiquidClass.String, "IndexOf", "(string,string)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var text = Liquid.Object.GetString(stack[sp]);
 
-                a0 = text.IndexOf(Liquid.Object.GetString(id, stack[sp - 1]));
+                a0 = text.IndexOf(Liquid.Object.GetString(stack[sp - 1]));
 
                 return false;
             });
 
             addFunction(LiquidClass.String, "IndexOf", "(string,string,int)", LiquidClass.Int, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var text = Liquid.Object.GetString(stack[sp]);
 
-                a0 = text.IndexOf(Liquid.Object.GetString(id, stack[sp - 1]), stack[sp - 2]);
+                a0 = text.IndexOf(Liquid.Object.GetString(stack[sp - 1]), stack[sp - 2]);
+
+                return false;
+            });
+
+            addFunction(LiquidClass.String, "Left", "(string,int)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var task = Program.Exec.ObjectManager.GetTask(id);
+
+                var text = Liquid.Object.GetString(stack[sp]);
+
+                var index = stack[sp - 1];
+
+                if (index >= text.Length)
+                {
+                    a0 = Liquid.Object.NewString(id, text);
+                }
+                else if (index == 0)
+                {
+                    a0 = Liquid.Object.NewString(id);
+                }
+                else if (index < 0)
+                {
+                    task.RaiseError(ErrorCode.IllegalQuantity);
+                    return false;
+                }
+                else
+                {
+                    a0 = Liquid.Object.NewString(id, text.Substring(0, index));
+                }
+
+                return false;
+            });
+
+            addFunction(LiquidClass.String, "Pad", "(string,int)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var task = Program.Exec.ObjectManager.GetTask(id);
+
+                var text = Liquid.Object.GetString(stack[sp]);
+
+                var length = stack[sp - 1];
+
+                if (length == text.Length)
+                {
+                    a0 = Liquid.Object.NewString(id, text);
+                }
+                else if (length > text.Length)
+                {
+                    a0 = Liquid.Object.NewString(id, text + new string(' ', length - text.Length));
+                }
+                else if (length == 0)
+                {
+                    a0 = Liquid.Object.NewString(id);
+                }
+                else if (length < 0)
+                {
+                    task.RaiseError(ErrorCode.IllegalQuantity);
+                    return false;
+                }
+                else
+                {
+                    a0 = Liquid.Object.NewString(id, text.Substring(0, length));
+                }
 
                 return false;
             });
 
             addFunction(LiquidClass.String, "Repeat", "(string,int)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var text = Liquid.Object.GetString(stack[sp]);
 
                 a0 = Liquid.Object.NewString(id, string.Concat(Enumerable.Repeat(text, stack[sp - 1])));
 
                 return false;
             });
 
+            addFunction(LiquidClass.String, "Right", "(string,int)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var task = Program.Exec.ObjectManager.GetTask(id);
+
+                var text = Liquid.Object.GetString(stack[sp]);
+
+                var index = stack[sp - 1];
+
+                if (index >= text.Length)
+                {
+                    a0 = Liquid.Object.NewString(id, text);
+                }
+                else if (index == 0)
+                {
+                    a0 = Liquid.Object.NewString(id);
+                }
+                else if (index < 0)
+                {
+                    task.RaiseError(ErrorCode.IllegalQuantity);
+                    return false;
+                }
+                else
+                {
+                    a0 = Liquid.Object.NewString(id, text.Substring(text.Length - index, index));
+                }
+
+                return false;
+            });
+
             addFunction(LiquidClass.String, "Slice", "(string,int)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var task = Program.Exec.ObjectManager.GetTask(id);
+
+                var text = Liquid.Object.GetString(stack[sp]);
 
                 var startIndex = stack[sp - 1];
 
-                if (startIndex < 0 || startIndex >= text.Length)
+                if (startIndex < 0)
                 {
-                    var task = Program.Exec.ObjectManager.GetTask(id);
-
-                    task.Throw(ExceptionCode.IllegalQuantity);
+                    task.RaiseError(ErrorCode.IllegalQuantity);
                     return false;
                 }
-
-                a0 = Liquid.Object.NewString(id, text.Substring(startIndex));
+                else if (startIndex >= text.Length)
+                {
+                    a0 = Liquid.Object.NewString(id);
+                }
+                else
+                {
+                    a0 = Liquid.Object.NewString(id, text.Substring(startIndex));
+                }
 
                 return false;
             });
 
             addFunction(LiquidClass.String, "Slice", "(string,int,int)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var task = Program.Exec.ObjectManager.GetTask(id);
+
+                var text = Liquid.Object.GetString(stack[sp]);
 
                 var startIndex = stack[sp - 1];
 
@@ -5020,9 +5759,7 @@ namespace LiquidPlayer.Kernal
 
                 if (startIndex < 0 || length < 1 || startIndex + length > text.Length)
                 {
-                    var task = Program.Exec.ObjectManager.GetTask(id);
-
-                    task.Throw(ExceptionCode.IllegalQuantity);
+                    task.RaiseError(ErrorCode.IllegalQuantity);
                     return false;
                 }
 
@@ -5040,18 +5777,36 @@ namespace LiquidPlayer.Kernal
 
             addFunction(LiquidClass.String, "StartsWith", "(string,string)", LiquidClass.Boolean, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var text = Liquid.Object.GetString(stack[sp]);
 
-                var value = Liquid.Object.GetString(id, stack[sp - 1]);
+                var value = Liquid.Object.GetString(stack[sp - 1]);
 
                 a0 = (text.StartsWith(value)) ? 1 : 0;
 
                 return false;
             });
 
+            addFunction(LiquidClass.String, "ToBin", "(int)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var text = Convert.ToString(stack[sp], 2);
+
+                a0 = Liquid.Object.NewString(id, text);
+
+                return false;
+            });
+
+            addFunction(LiquidClass.String, "ToHex", "(int)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            {
+                var text = Convert.ToString(stack[sp], 16);
+
+                a0 = Liquid.Object.NewString(id, text);
+
+                return false;
+            });
+
             addFunction(LiquidClass.String, "ToLower", "(string)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var text = Liquid.Object.GetString(stack[sp]);
 
                 a0 = Liquid.Object.NewString(id, text.ToLower());
 
@@ -5060,7 +5815,7 @@ namespace LiquidPlayer.Kernal
 
             addFunction(LiquidClass.String, "ToUpper", "(string)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var text = Liquid.Object.GetString(stack[sp]);
 
                 a0 = Liquid.Object.NewString(id, text.ToUpper());
 
@@ -5069,64 +5824,30 @@ namespace LiquidPlayer.Kernal
 
             addFunction(LiquidClass.String, "Trim", "(string)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                var text = Liquid.Object.GetString(id, stack[sp]);
+                var text = Liquid.Object.GetString(stack[sp]);
 
                 a0 = Liquid.Object.NewString(id, text.Trim());
 
                 return false;
             });
 
-            /* 
-            stubs[":Graphics.Circle(int,int,int)"] = delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addFunction(LiquidClass.String, "TrimEnd", "(string)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                Sprockets.Graphics.Circle(stack[sp], stack[sp - 1], stack[sp - 2]);
+                var text = Liquid.Object.GetString(stack[sp]);
+
+                a0 = Liquid.Object.NewString(id, text.TrimEnd());
 
                 return false;
             });
 
-            stubs[":Graphics.CircleFill(int,int,int)"] = delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
+            addFunction(LiquidClass.String, "TrimStart", "(string)", LiquidClass.String, LiquidClass.None, delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
             {
-                Sprockets.Graphics.CircleFill(stack[sp], stack[sp - 1], stack[sp - 2]);
+                var text = Liquid.Object.GetString(stack[sp]);
+
+                a0 = Liquid.Object.NewString(id, text.TrimStart());
 
                 return false;
             });
-
-            stubs[":Graphics.Ink(int)"] = delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                Sprockets.Graphics.MixColor((uint)stack[sp]);
-
-                return false;
-            });
-
-            stubs[":Graphics.Ink(float,float,float)"] = delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                Sprockets.Graphics.MixColor(Util.Int2Float(stack[sp]), Util.Int2Float(stack[sp - 1]), Util.Int2Float(stack[sp - 2]));
-
-                return false;
-            });
-
-            stubs[":Graphics.Ink(float,float,float,float)"] = delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                Sprockets.Graphics.MixColor(Util.Int2Float(stack[sp]), Util.Int2Float(stack[sp - 1]), Util.Int2Float(stack[sp - 2]), Util.Int2Float(stack[sp - 3]));
-
-                return false;
-            });
-
-            stubs[":Graphics.Rect(int,int,int,int)"] = delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                Sprockets.Graphics.Rectangle(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
-
-                return false;
-            });
-
-            stubs[":Graphics.RectFill(int,int,int,int)"] = delegate (LiquidClass lc, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0)
-            {
-                Sprockets.Graphics.RectangleFill(stack[sp], stack[sp - 1], stack[sp - 2], stack[sp - 3]);
-
-                return false;
-            });
-            */
-
         }
     }
 }

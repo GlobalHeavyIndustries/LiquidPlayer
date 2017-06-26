@@ -8,13 +8,13 @@ namespace LiquidPlayer.Liquid
 {
     public class Applet : Task
     {
-        public static int NewApplet(string fileName, string arguments, int parentId = 0)
+        public static int NewApplet(string path, string arguments, int parentId = 0)
         {
             var id = LiquidPlayer.Program.Exec.ObjectManager.New(LiquidClass.Applet);
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -22,20 +22,20 @@ namespace LiquidPlayer.Liquid
                 LiquidPlayer.Program.Exec.ObjectManager.Hook(id, parentId);
             }
 
-            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new Applet(id, fileName, arguments);
+            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new Applet(id, path, arguments);
 
             return id;
         }
 
-        protected Applet(int id, string fileName, string arguments)
-            : base(id, fileName, arguments)
+        protected Applet(int id, string path, string arguments)
+            : base(id, path, arguments)
         {
 
         }
 
         public override string ToString()
         {
-            return $"Applet (Tag: \"{tag}\")";
+            return $"Applet (Tag: \"{tag}\"), Path: \"{path}\")";
         }
 
         protected override bool callback(int messageId)

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LiquidPlayer.Liquid
 {
-    public class CharacterSet : Font
+    public class CharacterSet : Object
     {
         #region Dispose pattern
         private bool disposed = false;
@@ -36,11 +36,15 @@ namespace LiquidPlayer.Liquid
         }
         #endregion
 
+        protected string name;
+        protected bool isLoaded;
+        protected bool[] isAvailable;
+
         protected int bitmapId;
         protected Bitmap bitmap;
 
-        protected int brushId;
-        protected Brush brush;
+        protected int rasterId;
+        protected Raster raster;
 
         protected int displayList;
         protected int tileWidth;
@@ -54,6 +58,30 @@ namespace LiquidPlayer.Liquid
         protected int[] y1;
         protected uint[] palette;
 
+        public string Name
+        {
+            get
+            {
+                return name;
+            }
+        }
+
+        public bool IsLoaded
+        {
+            get
+            {
+                return isLoaded;
+            }
+        }
+
+        public bool[] IsAvailable
+        {
+            get
+            {
+                return isAvailable;
+            }
+        }
+
         public int BitmapId
         {
             get
@@ -62,11 +90,11 @@ namespace LiquidPlayer.Liquid
             }
         }
 
-        public int BrushId
+        public int RasterId
         {
             get
             {
-                return brushId;
+                return rasterId;
             }
         }
 
@@ -132,7 +160,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -146,27 +174,35 @@ namespace LiquidPlayer.Liquid
         }
 
         public CharacterSet(int id, int bitmapId, int tileWidth = 0, int tileHeight = 0, int glyphWidth = 0, int glyphHeight = 0)
-            : base(id, "")
+            : base(id)
         {
+            this.isLoaded = false;
+            this.isAvailable = new bool[256];
+
             if (bitmapId == 0)
             {
-                Throw(ExceptionCode.NullObject);
+                RaiseError(ErrorCode.NullObject);
                 return;
             }
 
             this.bitmapId = objectManager.Copy(bitmapId);
             this.bitmap = objectManager[bitmapId].LiquidObject as Bitmap;
 
-            var brushId = Brush.NewBrush(bitmapId, id);
+            tileWidth = (tileWidth == 0) ? bitmap.Width / 16 : tileWidth;
+            tileHeight = (tileHeight == 0) ? bitmap.Height / 16 : tileHeight;
+            glyphWidth = (glyphWidth == 0) ? tileWidth : glyphWidth;
+            glyphHeight = (glyphHeight == 0) ? tileHeight : glyphHeight;
 
-            if (brushId == 0)
+            var rasterId = Raster.NewRaster(bitmapId, id);
+
+            if (rasterId == 0)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
                 return;
             }
 
-            this.brushId = brushId;
-            this.brush = objectManager[brushId].LiquidObject as Brush;
+            this.rasterId = rasterId;
+            this.raster = objectManager[rasterId].LiquidObject as Raster;
 
             this.displayList = Sprockets.Graphics.GenLists(256);
             this.tileWidth = (tileWidth == 0) ? bitmap.Width / 16 : tileWidth;
@@ -188,17 +224,11 @@ namespace LiquidPlayer.Liquid
             return $"Character Set (Name: \"{name}\")";
         }
 
-        public void Clear(int character, uint color = 0)
+        public void Clear(byte character, uint color = 0)
         {
-            if (character < 0 || character > 255)
+            if (!isLoaded || !isAvailable[character])
             {
-                Throw(ExceptionCode.IllegalQuantity);
-                return;
-            }
-
-            if (!isAvailable[character])
-            {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 
@@ -209,22 +239,22 @@ namespace LiquidPlayer.Liquid
             {
                 for (var x = x1; x < x1 + tileWidth; x++)
                 {
-                    brush.Plot(x, y, color);
+                    raster.Plot(x, y, color);
                 }
             }
         }
 
-        public void CustomCharacter(int character, int scanLine, string data)
+        public void CustomCharacter(byte character, int scanLine, string data)
         {
-            if (character < 0 || character > 255 || scanLine < 0 || scanLine >= tileHeight || data.Length > tileWidth)
+            if (!isLoaded || !isAvailable[character])
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 
-            if (!isAvailable[character])
+            if (scanLine < 0 || scanLine >= tileHeight || data.Length > tileWidth)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
 
@@ -233,23 +263,65 @@ namespace LiquidPlayer.Liquid
 
             foreach(var ch in data)
             {
-                brush.Plot(x, y, palette[ch]);
+                raster.Plot(x, y, palette[ch]);
                 x++;
             }
         }
 
-        private bool mapCharacter(int character, int tile)
+        public int GetHeight()
         {
-            if (character < 0 || character > 255 || tile < 0 || tile > maxTileCount)
+            if (!isLoaded)
             {
-                Throw(ExceptionCode.IllegalQuantity);
-                return true;
+                RaiseError(ErrorCode.Denied);
+                return 0;
             }
 
-            if (isAvailable[character])
+            return glyphHeight;
+        }
+
+        public int GetWidth()
+        {
+            return glyphWidth;
+        }
+
+        public int GetWidth(string text)
+        {
+            if (!isLoaded)
             {
-                Throw(ExceptionCode.Denied);
-                return true;
+                RaiseError(ErrorCode.Denied);
+                return 0;
+            }
+
+            var textWidth = 0;
+
+            for (var index = 0; index < text.Length; index++)
+            {
+                var character = text[index];
+
+                if (!isAvailable[character])
+                {
+                    RaiseError(ErrorCode.Denied);
+                    return 0;
+                }
+
+                textWidth += glyphWidth;
+            }
+
+            return textWidth;
+        }
+
+        private bool mapCharacter(byte character, int tile)
+        {
+            if (!isLoaded)
+            {
+                RaiseError(ErrorCode.Denied);
+                return false;
+            }
+
+            if (tile < 0 || tile > maxTileCount)
+            {
+                RaiseError(ErrorCode.IllegalQuantity);
+                return false;
             }
 
             var x1 = (tile % tilesAcross) * tileWidth;
@@ -260,13 +332,11 @@ namespace LiquidPlayer.Liquid
             Sprockets.Graphics.CreateTile(displayList + character, bitmap.Handle, x1, y1, x2, y2, bitmap.Width, bitmap.Height, glyphWidth, glyphHeight);
 
             isAvailable[character] = true;
-            width[character] = glyphWidth;
-            height = glyphHeight;
 
             this.x1[character] = x1;
             this.y1[character] = y1;
 
-            return false;
+            return true;
         }
 
         public void MapAll()
@@ -275,7 +345,7 @@ namespace LiquidPlayer.Liquid
 
             for (var character = 0; character < 256; character++)
             {
-                if (mapCharacter(character, tile))
+                if (!mapCharacter((byte)character, tile))
                 {
                     return;
                 }
@@ -284,19 +354,19 @@ namespace LiquidPlayer.Liquid
             }
         }
 
-        public void MapCharacter(int character, int tile)
+        public void MapCharacter(byte character, int tile)
         {
-            if (mapCharacter(character, tile))
+            if (!mapCharacter(character, tile))
             {
                 return;
             }
         }
 
-        public void MapCharacters(int character, int tile, int count)
+        public void MapCharacters(byte character, int tile, int count)
         {
             for (var index = 1; index <= count; index++)
             {
-                if (mapCharacter(character, tile))
+                if (!mapCharacter(character, tile))
                 {
                     return;
                 }
@@ -310,7 +380,7 @@ namespace LiquidPlayer.Liquid
         {
             foreach (var character in text)
             {
-                if (mapCharacter(character, tile))
+                if (mapCharacter((byte)character, tile))
                 {
                     return;
                 }
@@ -319,42 +389,43 @@ namespace LiquidPlayer.Liquid
             }
         }
 
-        public void Palette(int index, uint color)
+        public void Palette(byte index, uint color)
         {
-            if (index < 0 || index > 255)
-            {
-                Throw(ExceptionCode.IllegalQuantity);
-                return;
-            }
-
             palette[index] = color;
         }
 
-        public override void Print(int x, int y, string caption)
+        public virtual void Print(int x, int y, byte character)
         {
             bitmap.SwapBuffers();
 
-            Sprockets.Graphics.Print(displayList, x, y, caption);
+            Sprockets.Graphics.PrintLists(displayList, x, y, character);
         }
 
-        public void Scroll(int character, ScrollDirection direction, int count = 1, bool wrap = false)
+        public virtual void Print(int x, int y, string caption)
         {
-            if (character < 0 || character > 255 || count < 1 || count >= tileWidth)
+            bitmap.SwapBuffers();
+
+            Sprockets.Graphics.PrintLists(displayList, x, y, caption);
+        }
+
+        public void Scroll(byte character, ScrollDirection direction, int count = 1, bool wrap = false)
+        {
+            if (!isLoaded || !isAvailable[character])
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 
-            if (!isAvailable[character])
+            if (count < 1 || count >= tileWidth)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
 
             var x = x1[character];
             var y = y1[character];
 
-            brush.Scroll(x, y, x + tileWidth - 1, y + tileHeight - 1, direction, count, wrap);
+            raster.Scroll(x, y, x + tileWidth - 1, y + tileHeight - 1, direction, count, wrap);
         }
 
         public override void Destructor()
@@ -370,9 +441,10 @@ namespace LiquidPlayer.Liquid
             objectManager.Mark(bitmapId);
             bitmap = null;
 
-            objectManager.Mark(brushId);
-            brush = null;
+            objectManager.Mark(rasterId);
+            raster = null;
 
+            isAvailable = null;
             x1 = null;
             y1 = null;
             palette = null;

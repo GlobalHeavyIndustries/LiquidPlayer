@@ -33,6 +33,8 @@ namespace LiquidPlayer.Exec
 
         private int activeTask;
 
+        private double[] watch = new double[10];
+
         public DSL.LongManager LongManager
         {
             get
@@ -86,6 +88,26 @@ namespace LiquidPlayer.Exec
             get
             {
                 return virtualMachine;
+            }
+        }
+
+        public int ActiveTask
+        {
+            get
+            {
+                return activeTask;
+            }
+        }
+
+        public double[] Watch
+        {
+            get
+            {
+                return watch;
+            }
+            set
+            {
+                watch = value;
             }
         }
 
@@ -174,11 +196,11 @@ namespace LiquidPlayer.Exec
 
                 if (task.PCB.State == Liquid.Task.ProcessState.Running || task.PCB.State == Liquid.Task.ProcessState.Waiting)
                 {
-                    Directory.SetCurrentDirectory(task.CurrentDirectory);
+                    task.RestoreState();
 
-                    task.NextStep();
+                    task.VRun();
 
-                    task.CurrentDirectory = Directory.GetCurrentDirectory();
+                    task.SaveState();
                 }
 
                 if (task.PCB.State == Liquid.Task.ProcessState.Waiting)
@@ -190,7 +212,7 @@ namespace LiquidPlayer.Exec
                     thatQueue.Enqueue(taskId);
                 }
 
-                if (task.PCB.State == Liquid.Task.ProcessState.Crashed || task.PCB.State == Liquid.Task.ProcessState.Finished)
+                if (task.IsDone())
                 {
                     if (taskId == activeTask)
                     {
@@ -201,12 +223,14 @@ namespace LiquidPlayer.Exec
                         break;
                     }
                 }
+                else
+                {
+                    task.RestoreState();
 
-                //Directory.SetCurrentDirectory(task.CurrentDirectory);
+                    task.UpdateScene();
 
-                task.UpdateScene();
-
-                //task.CurrentDirectory = Directory.GetCurrentDirectory();
+                    task.SaveState();
+                }
             }
 
             router.Run();
@@ -224,98 +248,21 @@ namespace LiquidPlayer.Exec
 
         public void RenderScene()
         {
-            var activeFBOId = objectManager.ActiveFBOId;
-
-            if (activeFBOId != 0)
-            {
-                var fbo = objectManager[activeFBOId].LiquidObject as Liquid.FBO;
-
-                fbo.Unbind();
-            }
-
             if (activeTask != 0)
             {
                 var task = objectManager[activeTask].LiquidObject as Liquid.Task;
 
-                //Directory.SetCurrentDirectory(task.CurrentDirectory);
+                task.RestoreState();
 
                 task.RenderScene();
 
-                //task.CurrentDirectory = Directory.GetCurrentDirectory();
+                task.SaveState();
             }
 
 
             var error = Sprockets.Graphics.GetError();
 
             Debug.Assert(error == OpenTK.Graphics.OpenGL.ErrorCode.NoError);
-        }
-
-        // TODO!
-        //
-        // move GetLeftover to DSL.FreeList?
-        //
-
-        public List<int> GetLeftoverLongs(int id)
-        {
-            var leftoverLongs = new List<int>();
-
-            longManager.Head();
-
-            var cursor = longManager.Cursor;
-
-            while (cursor != 0)
-            {
-                if (longManager.GetOwner(cursor) == id)
-                {
-                    leftoverLongs.Add(cursor);
-                }
-
-                cursor = longManager.Next();
-            }
-
-            return leftoverLongs;
-        }
-
-        public List<int> GetLeftoverDoubles(int id)
-        {
-            var leftoverDoubles = new List<int>();
-
-            doubleManager.Head();
-
-            var cursor = doubleManager.Cursor;
-
-            while (cursor != 0)
-            {
-                if (doubleManager.GetOwner(cursor) == id)
-                {
-                    leftoverDoubles.Add(cursor);
-                }
-
-                cursor = doubleManager.Next();
-            }
-
-            return leftoverDoubles;
-        }
-
-        public List<int> GetLeftoverStrings(int id)
-        {
-            var leftoverStrings = new List<int>();
-
-            stringManager.Head();
-
-            var cursor = stringManager.Cursor;
-
-            while (cursor != 0)
-            {
-                if (stringManager.GetOwner(cursor) == id)
-                {
-                    leftoverStrings.Add(cursor);
-                }
-
-                cursor = stringManager.Next();
-            }
-
-            return leftoverStrings;
         }
     }
 }

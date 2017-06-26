@@ -84,11 +84,6 @@ namespace LiquidPlayer.Exec
             int bp;
             int sz;
 
-            // Debugger
-            int lp;
-            int ln;
-            int fn;
-
             // Interrupts
             bool irqEnabled;
             int irqCount;
@@ -104,6 +99,9 @@ namespace LiquidPlayer.Exec
             string[] stringTable;
             int[] aliasTable;
 
+            // Stubs
+            List<FunctionDelegate> stubs;
+
             // Code
             int[] codeSpace;
 
@@ -113,13 +111,17 @@ namespace LiquidPlayer.Exec
             // Task State
             bool isWaiting;
 
+            // Error Code
+            ErrorCode errorCode;
+            string errorData;
+
             // VM helper variables
             LiquidClass liquidClass;
             int data;
             int count;
             int index;
             int address;
-            FunctionDelegate function;
+            FunctionDelegate functionDelegate;
 
             if (startPC == 0)
             {
@@ -145,10 +147,6 @@ namespace LiquidPlayer.Exec
                 sz = PCB.SZ;
 
                 id = PCB.ID;
-
-                lp = PCB.LP;
-                ln = PCB.LN;
-                fn = PCB.FN;
 
                 irqEnabled = true;
                 irqCount = 64;
@@ -199,10 +197,6 @@ namespace LiquidPlayer.Exec
                     sz = stack.Length;
                 }
 
-                lp = 0;
-                ln = 0;
-                fn = 0;
-
                 irqEnabled = false;
                 irqCount = 0;
 
@@ -214,32 +208,27 @@ namespace LiquidPlayer.Exec
             stringTable = task.StringTable;
             aliasTable = task.AliasTable;
 
+            stubs = task.Stubs;
+
             codeSpace = task.CodeSpace;
             dataSpace = task.DataSpace;
 
-            isWaiting = (PCB.State == Liquid.Task.ProcessState.Waiting) ? true : false;
+            isWaiting = (PCB.State == Liquid.Task.ProcessState.Waiting);
 
-        Recover:
+            errorCode = ErrorCode.None;
+            errorData = "";
 
             lastTime = Program.AtomicClock;
 
         Continue:
 
             Debug.Assert(sp >= 0);
-            
+
             switch ((pCode)codeSpace[pc])
             {
                 case pCode.Halt:
                     pc = 0;
-                    ln = 0;
-                    fn = 0;
                     goto Done;
-                case pCode.Info:
-                    lp = codeSpace[pc + 1];
-                    ln = codeSpace[pc + 2];
-                    fn = codeSpace[pc + 3];
-                    pc += 4;
-                    break;
                 case pCode.IRQ:
                     irqCount--;
 
@@ -252,7 +241,7 @@ namespace LiquidPlayer.Exec
 
                         if (elapsed >= 5000000)
                         {
-                            task.Raise(ExceptionCode.Timeout);
+                            errorCode = ErrorCode.Timeout;
                             pc++;
                             goto Done;
                         }
@@ -269,19 +258,13 @@ namespace LiquidPlayer.Exec
 
                     pc++;
                     break;
-                case pCode.BufferA0:
-                    throw new NotImplementedException();
-                case pCode.BufferD0Float:
-                    throw new NotImplementedException();
-                case pCode.Unbuffer:
-                    throw new NotImplementedException();
                 case pCode.Alloc:
                     count = codeSpace[pc + 1];
                     if (count != 0)
                     {
                         if (sp + count >= sz)
                         {
-                            task.Raise(ExceptionCode.StackOverflow);
+                            errorCode = ErrorCode.StackOverflow;
                             pc += 2;
                             goto Done;
                         }
@@ -305,8 +288,6 @@ namespace LiquidPlayer.Exec
                     bx.Address = longManager[a0];
                     pc++;
                     break;
-                case pCode.Unused:
-                    throw new NotImplementedException();
                 case pCode.PointGlobal:
                     bx.LoAddress = 0;
                     bx.HiAddress = codeSpace[pc + 1];
@@ -353,8 +334,6 @@ namespace LiquidPlayer.Exec
                     }
                     pc++;
                     break;
-                case pCode.Iterator:
-                    throw new NotImplementedException();
                 case pCode.This:
                     a0 = id;
                     pc++;
@@ -368,15 +347,13 @@ namespace LiquidPlayer.Exec
                     a0 = objectManager.New((LiquidClass)index);
                     if (a0 == 0)
                     {
-                        task.Raise(ExceptionCode.OutOfMemory);
+                        errorCode = ErrorCode.OutOfMemory;
                         pc += 2;
                         goto Done;
                     }
                     objectManager.Hook(a0, id);
                     pc += 2;
                     break;
-                case pCode.Hook:
-                    throw new NotImplementedException();
                 case pCode.Copy:
                     if (a0 != 0)
                     {
@@ -414,7 +391,7 @@ namespace LiquidPlayer.Exec
                 case pCode.FreeOnErr:
                     if (a0 != 0)
                     {
-                        if (task.ThrowCode != ExceptionCode.None)
+                        if (task.IsErrorRaised())
                         {
                             objectManager.Mark(a0);
                             a0 = 0;
@@ -471,7 +448,7 @@ namespace LiquidPlayer.Exec
                     sp++;
                     if (sp >= sz)
                     {
-                        task.Raise(ExceptionCode.StackOverflow);
+                        errorCode = ErrorCode.StackOverflow;
                         pc++;
                         goto Done;
                     }
@@ -482,7 +459,7 @@ namespace LiquidPlayer.Exec
                     sp++;
                     if (sp >= sz)
                     {
-                        task.Raise(ExceptionCode.StackOverflow);
+                        errorCode = ErrorCode.StackOverflow;
                         pc++;
                         goto Done;
                     }
@@ -507,8 +484,6 @@ namespace LiquidPlayer.Exec
                     a1 = (int)d1;
                     pc++;
                     break;
-                case pCode.NotUsed:
-                    throw new NotImplementedException();
                 case pCode.NegA0:
                     a0 = -a0;
                     pc++;
@@ -542,21 +517,11 @@ namespace LiquidPlayer.Exec
                     pc++;
                     break;
                 case pCode.Abs:
-                    if (a0 < 0)
-                    {
-                        a0 = -a0;
-                    }
+                    a0 = Math.Abs(a0);
                     pc++;
                     break;
-                case pCode.Sgn:
-                    if (a0 < 0)
-                    {
-                        a0 = -1;
-                    }
-                    else if (a0 > 0)
-                    {
-                        a0 = 1;
-                    }
+                case pCode.Sign:
+                    a0 = Math.Sign(a0);
                     pc++;
                     break;
                 case pCode.Add:
@@ -578,7 +543,7 @@ namespace LiquidPlayer.Exec
                 case pCode.Div:
                     if (a1 == 0)
                     {
-                        task.Raise(ExceptionCode.DivisionByZero);
+                        errorCode = ErrorCode.DivisionByZero;
                         pc++;
                         goto Done;
                     }
@@ -701,7 +666,7 @@ namespace LiquidPlayer.Exec
                     sp++;
                     if (sp >= sz)
                     {
-                        task.Raise(ExceptionCode.StackOverflow);
+                        errorCode = ErrorCode.StackOverflow;
                         pc++;
                         goto Done;
                     }
@@ -712,7 +677,7 @@ namespace LiquidPlayer.Exec
                     sp++;
                     if (sp >= sz)
                     {
-                        task.Raise(ExceptionCode.StackOverflow);
+                        errorCode = ErrorCode.StackOverflow;
                         pc++;
                         goto Done;
                     }
@@ -769,27 +734,39 @@ namespace LiquidPlayer.Exec
                     d0 = Math.Abs(d0);
                     pc++;
                     break;
-                case pCode.DSgn:
+                case pCode.DSign:
                     d0 = Math.Sign(d0);
                     pc++;
                     break;
                 case pCode.DVal:
-                    if (!double.TryParse(stringManager[a0], out d0))
+                    var s = stringManager[a0];
+                    if (s != "")
                     {
-                        task.Raise(ExceptionCode.Denied);
-                        pc++;
-                        goto Done;
+                        if (!double.TryParse(stringManager[a0], out d0))
+                        {
+                            errorCode = ErrorCode.Denied;
+                            pc++;
+                            goto Done;
+                        }
+                    }
+                    else
+                    {
+                        d0 = 0d;
                     }
                     pc++;
                     break;
                 case pCode.DFrac:
-                    throw new NotImplementedException();
-                case pCode.DCeil:
+                    d0 = d0 - Math.Truncate(d0);
+                    pc++;
+                    break;
+                case pCode.DCeiling:
                     d0 = Math.Ceiling(d0);
                     pc++;
                     break;
-                case pCode.DFix:
-                    throw new NotImplementedException();
+                case pCode.DFloor:
+                    d0 = Math.Floor(d0);
+                    pc++;
+                    break;
                 case pCode.DRound:
                     d0 = Math.Round(d0);
                     pc++;
@@ -798,7 +775,7 @@ namespace LiquidPlayer.Exec
                     d0 = Math.Tan(d0);
                     pc++;
                     break;
-                case pCode.DAtn:
+                case pCode.DAtan:
                     d0 = Math.Atan(d0);
                     pc++;
                     break;
@@ -815,20 +792,30 @@ namespace LiquidPlayer.Exec
                     pc++;
                     break;
                 case pCode.DExp2:
-                    throw new NotImplementedException();
+                    d0 = Math.Pow(2, d0);
+                    pc++;
+                    break;
                 case pCode.DExp10:
-                    throw new NotImplementedException();
+                    d0 = Math.Pow(10, d0);
+                    pc++;
+                    break;
                 case pCode.DLog:
                     d0 = Math.Log(d0);
                     pc++;
                     break;
                 case pCode.DLog2:
-                    throw new NotImplementedException();
-                case pCode.DLog10:
-                    d0 = Math.Log10(d0);
+                    d0 = Math.Log(d0, 2);
                     pc++;
                     break;
-                case pCode.DSqr:
+                case pCode.DLog10:
+                    d0 = Math.Log(d0, 10);
+                    pc++;
+                    break;
+                case pCode.DSq:
+                    d0 = d0 * d0;
+                    pc++;
+                    break;
+                case pCode.DSqrt:
                     d0 = Math.Sqrt(d0);
                     pc++;
                     break;
@@ -851,7 +838,7 @@ namespace LiquidPlayer.Exec
                 case pCode.DDiv:
                     if (d1 == 0d)
                     {
-                        task.Raise(ExceptionCode.DivisionByZero);
+                        errorCode = ErrorCode.DivisionByZero;
                         pc++;
                         goto Done;
                     }
@@ -890,7 +877,7 @@ namespace LiquidPlayer.Exec
                     a0 = stringManager.New(id, stringTable[codeSpace[pc + 1]]);
                     if (a0 == 0)
                     {
-                        task.Raise(ExceptionCode.OutOfMemory);
+                        errorCode = ErrorCode.OutOfMemory;
                         pc += 2;
                         goto Done;
                     }
@@ -900,7 +887,7 @@ namespace LiquidPlayer.Exec
                     a1 = stringManager.New(id, stringTable[codeSpace[pc + 1]]);
                     if (a1 == 0)
                     {
-                        task.Raise(ExceptionCode.OutOfMemory);
+                        errorCode = ErrorCode.OutOfMemory;
                         pc += 2;
                         goto Done;
                     }
@@ -910,10 +897,10 @@ namespace LiquidPlayer.Exec
                     if (a0 != 0)
                     {
                         index = a0;
-                        a0 = stringManager.Clone(index);
+                        a0 = stringManager.Clone(id, index);
                         if (a0 == 0)
                         {
-                            task.Raise(ExceptionCode.OutOfMemory);
+                            errorCode = ErrorCode.OutOfMemory;
                             pc++;
                             goto Done;
                         }
@@ -924,10 +911,10 @@ namespace LiquidPlayer.Exec
                     if (a1 != 0)
                     {
                         index = a1;
-                        a1 = stringManager.Clone(index);
+                        a1 = stringManager.Clone(id, index);
                         if (a1 == 0)
                         {
-                            task.Raise(ExceptionCode.OutOfMemory);
+                            errorCode = ErrorCode.OutOfMemory;
                             pc++;
                             goto Done;
                         }
@@ -942,20 +929,20 @@ namespace LiquidPlayer.Exec
                             a0 = stringManager.New(id);
                             if (a0 == 0)
                             {
-                                task.Raise(ExceptionCode.OutOfMemory);
+                                errorCode = ErrorCode.OutOfMemory;
                                 pc++;
                                 goto Done;
                             }
                         }
                         stringManager.Add(a0, stringManager[a1]);
-                        pc++;
                     }
+                    pc++;
                     break;
                 case pCode.WStrA0:
                     a0 = stringManager.New(id, Convert.ToString(a0));
                     if (a0 == 0)
                     {
-                        task.Raise(ExceptionCode.OutOfMemory);
+                        errorCode = ErrorCode.OutOfMemory;
                         pc++;
                         goto Done;
                     }
@@ -965,14 +952,19 @@ namespace LiquidPlayer.Exec
                     a0 = stringManager.New(id, Convert.ToString((float)d0));
                     if (a0 == 0)
                     {
-                        task.Raise(ExceptionCode.OutOfMemory);
+                        errorCode = ErrorCode.OutOfMemory;
                         pc++;
                         goto Done;
                     }
                     pc++;
                     break;
-                case pCode.WHook:
-                    throw new NotImplementedException();
+                case pCode.WAdopt:
+                    if (a0 != 0)
+                    {
+                        stringManager.SetOwner(a0, id);
+                    }
+                    pc++;
+                    break;
                 case pCode.WAssign:
                     data = loadBX(bx, stack, dataSpace);
                     if (data != 0)
@@ -1040,13 +1032,11 @@ namespace LiquidPlayer.Exec
                         pc += 2;
                     }
                     break;
-                case pCode.JumpIteratorEnd:
-                    throw new NotImplementedException();
                 case pCode.Gosub:
                     sp++;
                     if (sp >= sz)
                     {
-                        task.Raise(ExceptionCode.StackOverflow);
+                        errorCode = ErrorCode.StackOverflow;
                         pc += 2;
                         goto Done;
                     }
@@ -1058,19 +1048,21 @@ namespace LiquidPlayer.Exec
                     pc = stack[sp];
                     sp--;
                     break;
-                case pCode.Native:
+                case pCode.Stub:
                     if (a0 == 0)
                     {
-                        task.Raise(ExceptionCode.NullObject);
+                        errorCode = ErrorCode.NullObject;
                         pc += 2;
                         goto Done;
                     }
 
+                    PCB.LastPC = pc;
+
                     liquidClass = objectManager[a0].LiquidClass;
                     index = aliasTable[codeSpace[pc + 1]];
-                    function = Program.ClassManager[liquidClass].Methods[index].Stub;
+                    functionDelegate = stubs[index];
 
-                    isWaiting = function(liquidClass, a0, stack, sp, ref a0, ref bx, ref c0, ref d0);
+                    isWaiting = functionDelegate(liquidClass, a0, stack, sp, ref a0, ref bx, ref c0, ref d0);
 
                     if (startPC == 0)
                     {
@@ -1080,7 +1072,7 @@ namespace LiquidPlayer.Exec
                         }
                     }
 
-                    if (task.ThrowCode != ExceptionCode.None)
+                    if (task.IsErrorRaised())
                     {
                         pc += 2;
                         goto Done;
@@ -1102,14 +1094,14 @@ namespace LiquidPlayer.Exec
                 case pCode.Call:
                     if (a0 == 0)
                     {
-                        task.Raise(ExceptionCode.NullObject);
+                        errorCode = ErrorCode.NullObject;
                         pc += 2;
                         goto Done;
                     }
 
                     if (sp + 4 >= sz)
                     {
-                        task.Raise(ExceptionCode.StackOverflow);
+                        errorCode = ErrorCode.StackOverflow;
                         pc += 2;
                         goto Done;
                     }
@@ -1133,18 +1125,20 @@ namespace LiquidPlayer.Exec
                 case pCode.VTable:
                     if (a0 == 0)
                     {
-                        task.Raise(ExceptionCode.NullObject);
+                        errorCode = ErrorCode.NullObject;
                         pc += 2;
                         goto Done;
                     }
 
+                    PCB.LastPC = pc;
+
                     liquidClass = objectManager[a0].LiquidClass;
                     index = aliasTable[codeSpace[pc + 1]];
-                    function = Program.ClassManager[liquidClass].Methods[index].Stub;
+                    functionDelegate = Program.ClassManager[liquidClass].Methods[index].Target.FunctionDelegate;
 
-                    if (function != null)
+                    if (functionDelegate != null)
                     {
-                        isWaiting = function(liquidClass, a0, stack, sp, ref a0, ref bx, ref c0, ref d0);
+                        isWaiting = functionDelegate(liquidClass, a0, stack, sp, ref a0, ref bx, ref c0, ref d0);
 
                         if (startPC == 0)
                         {
@@ -1154,7 +1148,7 @@ namespace LiquidPlayer.Exec
                             }
                         }
 
-                        if (task.ThrowCode != ExceptionCode.None)
+                        if (task.IsErrorRaised())
                         {
                             pc += 2;
                             goto Done;
@@ -1175,12 +1169,12 @@ namespace LiquidPlayer.Exec
                     }
                     else
                     {
-                        address = Program.ClassManager[liquidClass].Methods[index].Address;
+                        address = Program.ClassManager[liquidClass].Methods[index].Target.Address;
                         if (address != 0)
                         {
                             if (sp + 4 >= sz)
                             {
-                                task.Raise(ExceptionCode.StackOverflow);
+                                errorCode = ErrorCode.StackOverflow;
                                 pc += 2;
                                 goto Done;
                             }
@@ -1206,19 +1200,21 @@ namespace LiquidPlayer.Exec
                         }
                     }
                     break;
-                case pCode.NativeClass:
+                case pCode.StubClass:
                     if (a0 == 0)
                     {
-                        task.Raise(ExceptionCode.NullObject);
+                        errorCode = ErrorCode.NullObject;
                         pc += 3;
                         goto Done;
                     }
 
+                    PCB.LastPC = pc;
+
                     liquidClass = (LiquidClass)aliasTable[codeSpace[pc + 1]];
                     index = aliasTable[codeSpace[pc + 2]];
-                    function = Program.ClassManager[liquidClass].Methods[index].Stub;
+                    functionDelegate = stubs[index];
 
-                    isWaiting = function(liquidClass, a0, stack, sp, ref a0, ref bx, ref c0, ref d0);
+                    isWaiting = functionDelegate(liquidClass, a0, stack, sp, ref a0, ref bx, ref c0, ref d0);
 
                     if (startPC == 0)
                     {
@@ -1228,7 +1224,7 @@ namespace LiquidPlayer.Exec
                         }
                     }
 
-                    if (task.ThrowCode != ExceptionCode.None)
+                    if (task.IsErrorRaised())
                     {
                         pc += 3;
                         goto Done;
@@ -1247,19 +1243,17 @@ namespace LiquidPlayer.Exec
                         pc += 3;
                     }
                     break;
-                case pCode.WaitClass:
-                    throw new NotImplementedException();
                 case pCode.CallClass:
                     if (a0 == 0)
                     {
-                        task.Raise(ExceptionCode.NullObject);
+                        errorCode = ErrorCode.NullObject;
                         pc += 3;
                         goto Done;
                     }
 
                     if (sp + 4 >= sz)
                     {
-                        task.Raise(ExceptionCode.StackOverflow);
+                        errorCode = ErrorCode.StackOverflow;
                         pc += 3;
                         goto Done;
                     }
@@ -1283,18 +1277,20 @@ namespace LiquidPlayer.Exec
                 case pCode.VTableClass:
                     if (a0 == 0)
                     {
-                        task.Raise(ExceptionCode.NullObject);
+                        errorCode = ErrorCode.NullObject;
                         pc += 3;
                         goto Done;
                     }
 
+                    PCB.LastPC = pc;
+
                     liquidClass = (LiquidClass)aliasTable[codeSpace[pc + 1]];
                     index = aliasTable[codeSpace[pc + 2]];
-                    function = Program.ClassManager[liquidClass].Methods[index].Stub;
+                    functionDelegate = Program.ClassManager[liquidClass].Methods[index].Target.FunctionDelegate;
 
-                    if (function != null)
+                    if (functionDelegate != null)
                     {
-                        isWaiting = function(liquidClass, a0, stack, sp, ref a0, ref bx, ref c0, ref d0);
+                        isWaiting = functionDelegate(liquidClass, a0, stack, sp, ref a0, ref bx, ref c0, ref d0);
 
                         if (startPC == 0)
                         {
@@ -1304,7 +1300,7 @@ namespace LiquidPlayer.Exec
                             }
                         }
 
-                        if (task.ThrowCode != ExceptionCode.None)
+                        if (task.IsErrorRaised())
                         {
                             pc += 3;
                             goto Done;
@@ -1325,12 +1321,12 @@ namespace LiquidPlayer.Exec
                     }
                     else
                     {
-                        address = Program.ClassManager[liquidClass].Methods[index].Address;
+                        address = Program.ClassManager[liquidClass].Methods[index].Target.Address;
                         if (address != 0)
                         {
                             if (sp + 4 >= sz)
                             {
-                                task.Raise(ExceptionCode.StackOverflow);
+                                errorCode = ErrorCode.StackOverflow;
                                 pc += 3;
                                 goto Done;
                             }
@@ -1357,10 +1353,12 @@ namespace LiquidPlayer.Exec
                     }
                     break;
                 case pCode.API:
-                    index = aliasTable[codeSpace[pc + 1]];
-                    function = Program.API[index].Stub;
+                    PCB.LastPC = pc;
 
-                    isWaiting = function(LiquidClass.None, a0, stack, sp, ref a0, ref bx, ref c0, ref d0);
+                    index = aliasTable[codeSpace[pc + 1]];
+                    functionDelegate = stubs[index];
+
+                    isWaiting = functionDelegate(LiquidClass.None, a0, stack, sp, ref a0, ref bx, ref c0, ref d0);
 
                     if (startPC == 0)
                     {
@@ -1370,7 +1368,7 @@ namespace LiquidPlayer.Exec
                         }
                     }
 
-                    if (task.ThrowCode != ExceptionCode.None)
+                    if (task.IsErrorRaised())
                     {
                         pc += 2;
                         goto Done;
@@ -1424,8 +1422,6 @@ namespace LiquidPlayer.Exec
                     a1 = (short)a1;
                     pc++;
                     break;
-                case pCode.BufferC0:
-                    throw new NotImplementedException();
                 case pCode.MoveA0C0:
                     a0 = (int)c0;
                     pc++;
@@ -1470,16 +1466,12 @@ namespace LiquidPlayer.Exec
                     a0 = stringManager.New(id, Convert.ToString(c0));
                     if (a0 == 0)
                     {
-                        task.Raise(ExceptionCode.OutOfMemory);
+                        errorCode = ErrorCode.OutOfMemory;
                         pc++;
                         goto Done;
                     }
                     pc++;
                     break;
-                case pCode.QPack:
-                    throw new NotImplementedException();
-                case pCode.QUnpack:
-                    throw new NotImplementedException();
                 case pCode.QConstC0:
                     c0 = Util.Int2Long(codeSpace[pc + 1], codeSpace[pc + 2]);
                     pc += 3;
@@ -1508,14 +1500,14 @@ namespace LiquidPlayer.Exec
                     sp++;
                     if (sp >= sz)
                     {
-                        task.Raise(ExceptionCode.StackOverflow);
+                        errorCode = ErrorCode.StackOverflow;
                         pc++;
                         goto Done;
                     }
                     index = longManager.New(id, c0);
                     if (index == 0)
                     {
-                        task.Raise(ExceptionCode.OutOfMemory);
+                        errorCode = ErrorCode.OutOfMemory;
                         pc++;
                         goto Done;
                     }
@@ -1526,14 +1518,14 @@ namespace LiquidPlayer.Exec
                     sp++;
                     if (sp >= sz)
                     {
-                        task.Raise(ExceptionCode.StackOverflow);
+                        errorCode = ErrorCode.StackOverflow;
                         pc++;
                         goto Done;
                     }
                     index = longManager.New(id, c1);
                     if (index == 0)
                     {
-                        task.Raise(ExceptionCode.OutOfMemory);
+                        errorCode = ErrorCode.OutOfMemory;
                         pc++;
                         goto Done;
                     }
@@ -1590,7 +1582,7 @@ namespace LiquidPlayer.Exec
                     c0 = Math.Abs(c0);
                     pc++;
                     break;
-                case pCode.QSgn:
+                case pCode.QSign:
                     c0 = Math.Sign(c0);
                     pc++;
                     break;
@@ -1613,7 +1605,7 @@ namespace LiquidPlayer.Exec
                 case pCode.QDiv:
                     if (c1 == 0L)
                     {
-                        task.Raise(ExceptionCode.DivisionByZero);
+                        errorCode = ErrorCode.DivisionByZero;
                         pc++;
                         goto Done;
                     }
@@ -1676,6 +1668,8 @@ namespace LiquidPlayer.Exec
                     c0 ^= c1;
                     pc++;
                     break;
+                case pCode.QAdopt:
+                    throw new NotImplementedException();
                 case pCode.QAssign:
                     data = loadBX(bx, stack, dataSpace);
                     if (data != 0)
@@ -1720,22 +1714,16 @@ namespace LiquidPlayer.Exec
                     c0 = (int)c0;
                     pc++;
                     break;
-                case pCode.BufferD0:
-                    throw new NotImplementedException();
                 case pCode.WStrD0:
                     a0 = stringManager.New(id, Convert.ToString(d0));
                     if (a0 == 0)
                     {
-                        task.Raise(ExceptionCode.OutOfMemory);
+                        errorCode = ErrorCode.OutOfMemory;
                         pc++;
                         goto Done;
                     }
                     pc++;
                     break;
-                case pCode.DPack:
-                    throw new NotImplementedException();
-                case pCode.DUnpack:
-                    throw new NotImplementedException();
                 case pCode.DConstD0:
                     d0 = Util.Int2Double(codeSpace[pc + 1], codeSpace[pc + 2]);
                     pc += 3;
@@ -1764,14 +1752,14 @@ namespace LiquidPlayer.Exec
                     sp++;
                     if (sp >= sz)
                     {
-                        task.Raise(ExceptionCode.StackOverflow);
+                        errorCode = ErrorCode.StackOverflow;
                         pc++;
                         goto Done;
                     }
                     index = doubleManager.New(id, d0);
                     if (index == 0)
                     {
-                        task.Raise(ExceptionCode.OutOfMemory);
+                        errorCode = ErrorCode.OutOfMemory;
                         pc++;
                         goto Done;
                     }
@@ -1782,14 +1770,14 @@ namespace LiquidPlayer.Exec
                     sp++;
                     if (sp >= sz)
                     {
-                        task.Raise(ExceptionCode.StackOverflow);
+                        errorCode = ErrorCode.StackOverflow;
                         pc++;
                         goto Done;
                     }
                     index = doubleManager.New(id, d1);
                     if (index == 0)
                     {
-                        task.Raise(ExceptionCode.OutOfMemory);
+                        errorCode = ErrorCode.OutOfMemory;
                         pc++;
                         goto Done;
                     }
@@ -1810,6 +1798,8 @@ namespace LiquidPlayer.Exec
                     sp--;
                     pc++;
                     break;
+                case pCode.DAdopt:
+                    throw new NotImplementedException();
                 case pCode.DAssign:
                     data = loadBX(bx, stack, dataSpace);
                     if (data != 0)
@@ -1847,15 +1837,6 @@ namespace LiquidPlayer.Exec
 
 Done:
 
-            if (task.ThrowCode != ExceptionCode.None && !Liquid.Exception.IsFatal(task.ThrowCode))
-            {
-                if (PCB.IsTrap)
-                {
-                    task.RaiseException(fn, ln, id);
-                    goto Recover;
-                }
-            }
-
             if (startPC == 0)
             {
                 if (pc == 0)
@@ -1881,32 +1862,27 @@ Done:
 
                 PCB.ID = id;
 
-                PCB.LP = lp;
-                PCB.LN = ln;
-                PCB.FN = fn;
-
                 PCB.Elapsed = (int)elapsed;
             }
 
-            if (task.ThrowCode != ExceptionCode.None)
+            if (task.IsErrorRaised())
             {
-                var error = $"Error {(int)task.ThrowCode} in file \"{fileTable[fn]}\" at line {ln}: {task.ThrowCode}";
+                errorCode = task.ErrorCode;
 
-                if (objectManager[taskId].LiquidClass == LiquidClass.Task)
-                {
-                    task.ErrorOut(error);
-                }
-                else
-                {
-                    System.Windows.Forms.MessageBox.Show(error);
-                }
-
-                PCB.State = Liquid.Task.ProcessState.Crashed;
+                errorData = task.ErrorData;
             }
 
-            stack = null;
-            dataSpace = null;
-            objectManager = null;
+            if (errorCode != ErrorCode.None)
+            { 
+                var codeTracker = task.GetCodeTracker(pc);
+
+                var errorMessage = $"Error {(int)errorCode} | \"{fileTable[codeTracker.FileNumber]}\" ({codeTracker.LineNumber})\n\n{errorCode}\n{errorData}";
+
+                System.Windows.Forms.MessageBox.Show(errorMessage, "Fatal Error");
+
+                PCB.State = Liquid.Task.ProcessState.Crashed;
+
+            }
 
             return a0;
         }

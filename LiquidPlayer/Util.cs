@@ -62,6 +62,50 @@ namespace LiquidPlayer
     {
         public static BitUnion BitUnion = new BitUnion();
 
+        public static string FindFile(string path, string sharedFolder = null)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return "";
+            }
+
+            var filePath = Path.GetDirectoryName(path);
+
+            var fileName = Path.GetFileName(path);
+
+            if (filePath == "")
+            {
+                filePath = Directory.GetCurrentDirectory() + @"\";
+            }
+            else if (filePath.Length >= 3 && filePath[1] == ':' && filePath[2] == '\\')
+            {
+                filePath += @"\";
+            }
+            else if (filePath[0] != '\\')
+            {
+                filePath = Directory.GetCurrentDirectory() + @"\" + filePath + @"\";
+            }
+
+            path = filePath + fileName;
+
+            if (File.Exists(path))
+            {
+                return path;
+            }
+
+            if (sharedFolder != null)
+            {
+                path = sharedFolder + fileName;
+
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+            }
+
+            return "";
+        }
+
         public static bool IsOdd(int value)
         {
             return value % 2 != 0;
@@ -135,6 +179,16 @@ namespace LiquidPlayer
             return val;
         }
 
+        public static T Min<T>(params T[] values)
+        {
+            return values.Min();
+        }
+
+        public static T Max<T>(params T[] values)
+        {
+            return values.Max();
+        }
+            
         public static void Swap<T>(ref T a, ref T b)
         {
             T temp = a; a = b; b = temp;

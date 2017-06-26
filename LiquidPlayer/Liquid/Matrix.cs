@@ -49,7 +49,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -91,8 +91,8 @@ namespace LiquidPlayer.Liquid
                 default:
                     if (classId > 0)
                     {
-                        clone = objectManager.Clone;
-                        compare = objectManager.Compare;
+                        clone = objectManager.VClone;
+                        compare = objectManager.VCompare;
                         free = objectManager.Mark;
                     }
                     else
@@ -135,12 +135,12 @@ namespace LiquidPlayer.Liquid
             {
                 if (newCapacity < 0)
                 {
-                    Throw(ExceptionCode.IllegalQuantity);
+                    RaiseError(ErrorCode.IllegalQuantity);
                     return;
                 }
                 else if (newCapacity > maxElementCount)
                 {
-                    Throw(ExceptionCode.OutOfMemory);
+                    RaiseError(ErrorCode.OutOfMemory);
                     return;
                 }
 
@@ -211,7 +211,7 @@ namespace LiquidPlayer.Liquid
                 objectManager[objectId].DataSpace = dataSpace;
             }
 
-            isSquared = (width > 0 && height > 0 && width == height) ? true : false;
+            isSquared = (width > 0 && height > 0 && width == height);
             capacity = newCapacity;
             width = newWidth;
             height = newHeight;
@@ -221,11 +221,86 @@ namespace LiquidPlayer.Liquid
         {
             if (xIndex < 0 || xIndex >= width || yIndex < 0 || yIndex >= height)
             {
-                Throw(ExceptionCode.BadSubscript);
+                RaiseError(ErrorCode.BadSubscript);
                 return -1;
             }
 
             return yIndex * width + xIndex;
+        }
+
+        public static int Add(int matrix1Id, int matrix2Id)
+        {
+            if (matrix1Id == 0 || matrix2Id == 0)
+            {
+                RaiseError(matrix1Id, ErrorCode.NullObject);
+                return 0;
+            }
+
+            var matrix1 = LiquidPlayer.Program.Exec.ObjectManager[matrix1Id].LiquidObject as Matrix;
+            var matrix2 = LiquidPlayer.Program.Exec.ObjectManager[matrix2Id].LiquidObject as Matrix;
+
+            if (matrix1.ClassId != matrix2.ClassId || matrix1.Width != matrix2.Width || matrix1.Height != matrix2.Height)
+            {
+                RaiseError(matrix1Id, ErrorCode.Denied);
+                return 0;
+            }
+
+            var matrixId = NewMatrix(matrix1.ClassId, matrix1.width, matrix1.height);
+            var matrix = LiquidPlayer.Program.Exec.ObjectManager[matrixId].LiquidObject as Matrix;
+
+            switch ((LiquidClass)matrix.ClassId)
+            {
+                case LiquidClass.Byte:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        matrix.dataSpace[i] = (byte)(matrix1.dataSpace[i] + matrix2.dataSpace[i]);
+                    }
+                    break;
+                case LiquidClass.Short:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        matrix.dataSpace[i] = (short)(matrix1.dataSpace[i] + matrix2.dataSpace[i]);
+                    }
+                    break;
+                case LiquidClass.Int:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        matrix.dataSpace[i] = matrix1.dataSpace[i] + matrix2.dataSpace[i];
+                    }
+                    break;
+                case LiquidClass.Long:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        var L1 = GetLong(matrix1.dataSpace[i]);
+                        var L2 = GetLong(matrix2.dataSpace[i]);
+
+                        matrix.dataSpace[i] = NewLong(matrixId, L1 + L2);
+                    }
+                    break;
+                case LiquidClass.Float:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        var f1 = Util.Int2Float(matrix1.dataSpace[i]);
+                        var f2 = Util.Int2Float(matrix2.dataSpace[i]);
+
+                        matrix.dataSpace[i] = Util.Float2Int(f1 + f2);
+                    }
+                    break;
+                case LiquidClass.Double:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        var d1 = GetDouble(matrix1.dataSpace[i]);
+                        var d2 = GetDouble(matrix2.dataSpace[i]);
+
+                        matrix.dataSpace[i] = NewDouble(matrixId, d1 + d2);
+                    }
+                    break;
+                default:
+                    RaiseError(matrix1Id, ErrorCode.Denied);
+                    break;
+            }
+
+            return matrixId;
         }
 
         public void Clear()
@@ -239,6 +314,332 @@ namespace LiquidPlayer.Liquid
             }
 
             objectManager[objectId].DataSpace.Fill(0);
+        }
+
+        public void Fill(int item)
+        {
+            if (clone != null)
+            {
+                if (free != null)
+                {
+                    for (var i = 0; i < capacity; i++)
+                    {
+                        free(dataSpace[i]);
+                        dataSpace[i] = clone(objectId, item);
+                    }
+                }
+                else
+                {
+                    for (var i = 0; i < capacity; i++)
+                    {
+                        dataSpace[i] = clone(objectId, item);
+                    }
+                }
+            }
+            else
+            {
+                if (free != null)
+                {
+                    for (var i = 0; i < capacity; i++)
+                    {
+                        free(dataSpace[i]);
+                        dataSpace[i] = item;
+                    }
+                }
+                else
+                {
+                    for (var i = 0; i < capacity; i++)
+                    {
+                        dataSpace[i] = item;
+                    }
+                }
+            }
+        }
+
+        public void Identity()
+        {
+            if (!isSquared)
+            {
+                RaiseError(ErrorCode.Denied);
+                return;
+            }
+
+            switch ((LiquidClass)classId)
+            {
+                case LiquidClass.Byte:
+                case LiquidClass.Short:
+                case LiquidClass.Int:
+                    for (var i = 0; i < capacity; i++)
+                    {
+                        dataSpace[i] = 0;
+                    }
+
+                    for (var i = 0; i < height; i++)
+                    {
+                        var index = i * width + i;
+                        dataSpace[index] = 1;
+                    }
+                    break;
+                case LiquidClass.Long:
+                    for (var i = 0; i < capacity; i++)
+                    {
+                        free(dataSpace[i]);
+                        dataSpace[i] = 0;
+                    }
+
+                    for (var i = 0; i < height; i++)
+                    {
+                        var index = i * width + i;
+                        dataSpace[index] = NewLong(objectId, 1L);
+                    }
+                    break;
+                case LiquidClass.Float:
+                    for (var i = 0; i < capacity; i++)
+                    {
+                        dataSpace[i] = 0;
+                    }
+
+                    for (var i = 0; i < height; i++)
+                    {
+                        var index = i * width + i;
+                        dataSpace[index] = Util.Float2Int(1f);
+                    }
+                    break;
+                case LiquidClass.Double:
+                    for (var i = 0; i < capacity; i++)
+                    {
+                        free(dataSpace[i]);
+                        dataSpace[i] = 0;
+                    }
+
+                    for (var i = 0; i < height; i++)
+                    {
+                        var index = i * width + i;
+                        dataSpace[index] = NewDouble(objectId, 1d);
+                    }
+                    break;
+                default:
+                    RaiseError(ErrorCode.Denied);
+                    break;
+            }
+        }
+
+        public static int Multiply(int matrix1Id, int matrix2Id)
+        {
+            if (matrix1Id == 0 || matrix2Id == 0)
+            {
+                RaiseError(matrix1Id, ErrorCode.NullObject);
+                return 0;
+            }
+
+            var matrix1 = LiquidPlayer.Program.Exec.ObjectManager[matrix1Id].LiquidObject as Matrix;
+            var matrix2 = LiquidPlayer.Program.Exec.ObjectManager[matrix2Id].LiquidObject as Matrix;
+
+            if (matrix1.ClassId != matrix2.ClassId || matrix1.Width != matrix2.Width || matrix1.Height != matrix2.Height)
+            {
+                RaiseError(matrix1Id, ErrorCode.Denied);
+                return 0;
+            }
+
+            var matrixId = NewMatrix(matrix1.ClassId, matrix1.width, matrix1.height);
+            var matrix = LiquidPlayer.Program.Exec.ObjectManager[matrixId].LiquidObject as Matrix;
+
+            switch ((LiquidClass)matrix.ClassId)
+            {
+                case LiquidClass.Byte:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        matrix.dataSpace[i] = (byte)(matrix1.dataSpace[i] * matrix2.dataSpace[i]);
+                    }
+                    break;
+                case LiquidClass.Short:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        matrix.dataSpace[i] = (short)(matrix1.dataSpace[i] * matrix2.dataSpace[i]);
+                    }
+                    break;
+                case LiquidClass.Int:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        matrix.dataSpace[i] = matrix1.dataSpace[i] * matrix2.dataSpace[i];
+                    }
+                    break;
+                case LiquidClass.Long:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        var L1 = GetLong(matrix1.dataSpace[i]);
+                        var L2 = GetLong(matrix2.dataSpace[i]);
+
+                        matrix.dataSpace[i] = NewLong(matrixId, L1 * L2);
+                    }
+                    break;
+                case LiquidClass.Float:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        var f1 = Util.Int2Float(matrix1.dataSpace[i]);
+                        var f2 = Util.Int2Float(matrix2.dataSpace[i]);
+
+                        matrix.dataSpace[i] = Util.Float2Int(f1 * f2);
+                    }
+                    break;
+                case LiquidClass.Double:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        var d1 = GetDouble(matrix1.dataSpace[i]);
+                        var d2 = GetDouble(matrix2.dataSpace[i]);
+
+                        matrix.dataSpace[i] = NewDouble(matrixId, d1 * d2);
+                    }
+                    break;
+                default:
+                    RaiseError(matrix1Id, ErrorCode.Denied);
+                    break;
+            }
+
+            return matrixId;
+        }
+
+        public static int Multiply(int matrixId, double scalarValue)
+        {
+            if (matrixId == 0)
+            {
+                RaiseError(matrixId, ErrorCode.NullObject);
+                return 0;
+            }
+
+            var matrix = LiquidPlayer.Program.Exec.ObjectManager[matrixId].LiquidObject as Matrix;
+
+            if (!matrix.IsSquared)
+            {
+                RaiseError(matrixId, ErrorCode.Denied);
+                return 0;
+            }
+
+            switch ((LiquidClass)matrix.ClassId)
+            {
+                case LiquidClass.Byte:
+                    for (var i = 0; i < matrix.capacity; i++)
+                    {
+                        matrix.dataSpace[i] = (byte)(matrix.dataSpace[i] * scalarValue);
+                    }
+                    break;
+                case LiquidClass.Short:
+                    for (var i = 0; i < matrix.capacity; i++)
+                    {
+                        matrix.dataSpace[i] = (short)(matrix.dataSpace[i] * scalarValue);
+                    }
+                    break;
+                case LiquidClass.Int:
+                    for (var i = 0; i < matrix.capacity; i++)
+                    {
+                        matrix.dataSpace[i] = (int)(matrix.dataSpace[i] * scalarValue);
+                    }
+                    break;
+                case LiquidClass.Long:
+                    for (var i = 0; i < matrix.capacity; i++)
+                    {
+                        var L = GetLong(matrix.dataSpace[i]);
+
+                        matrix.dataSpace[i] = NewLong(matrixId, (long)(L * scalarValue));
+                    }
+                    break;
+                case LiquidClass.Float:
+                    for (var i = 0; i < matrix.capacity; i++)
+                    {
+                        var f = Util.Int2Float(matrix.dataSpace[i]);
+
+                        matrix.dataSpace[i] = Util.Float2Int((float)(f * scalarValue));
+                    }
+                    break;
+                case LiquidClass.Double:
+                    for (var i = 0; i < matrix.capacity; i++)
+                    {
+                        var d = GetDouble(matrix.dataSpace[i]);
+
+                        matrix.dataSpace[i] = NewDouble(matrixId, d * scalarValue);
+                    }
+                    break;
+                default:
+                    RaiseError(matrixId, ErrorCode.Denied);
+                    break;
+            }
+
+            return matrixId;
+        }
+
+        public static int Subtract(int matrix1Id, int matrix2Id)
+        {
+            if (matrix1Id == 0 || matrix2Id == 0)
+            {
+                RaiseError(matrix1Id, ErrorCode.NullObject);
+                return 0;
+            }
+
+            var matrix1 = LiquidPlayer.Program.Exec.ObjectManager[matrix1Id].LiquidObject as Matrix;
+            var matrix2 = LiquidPlayer.Program.Exec.ObjectManager[matrix2Id].LiquidObject as Matrix;
+
+            if (matrix1.ClassId != matrix2.ClassId || matrix1.Width != matrix2.Width || matrix1.Height != matrix2.Height)
+            {
+                RaiseError(matrix1Id, ErrorCode.Denied);
+                return 0;
+            }
+
+            var matrixId = NewMatrix(matrix1.ClassId, matrix1.width, matrix1.height);
+            var matrix = LiquidPlayer.Program.Exec.ObjectManager[matrixId].LiquidObject as Matrix;
+
+            switch ((LiquidClass)matrix.ClassId)
+            {
+                case LiquidClass.Byte:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        matrix.dataSpace[i] = (byte)(matrix1.dataSpace[i] - matrix2.dataSpace[i]);
+                    }
+                    break;
+                case LiquidClass.Short:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        matrix.dataSpace[i] = (short)(matrix1.dataSpace[i] - matrix2.dataSpace[i]);
+                    }
+                    break;
+                case LiquidClass.Int:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        matrix.dataSpace[i] = matrix1.dataSpace[i] - matrix2.dataSpace[i];
+                    }
+                    break;
+                case LiquidClass.Long:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        var L1 = GetLong(matrix1.dataSpace[i]);
+                        var L2 = GetLong(matrix2.dataSpace[i]);
+
+                        matrix.dataSpace[i] = NewLong(matrixId, L1 - L2);
+                    }
+                    break;
+                case LiquidClass.Float:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        var f1 = Util.Int2Float(matrix1.dataSpace[i]);
+                        var f2 = Util.Int2Float(matrix2.dataSpace[i]);
+
+                        matrix.dataSpace[i] = Util.Float2Int(f1 - f2);
+                    }
+                    break;
+                case LiquidClass.Double:
+                    for (var i = 0; i < matrix1.capacity; i++)
+                    {
+                        var d1 = GetDouble(matrix1.dataSpace[i]);
+                        var d2 = GetDouble(matrix2.dataSpace[i]);
+
+                        matrix.dataSpace[i] = NewDouble(matrixId, d1 - d2);
+                    }
+                    break;
+                default:
+                    RaiseError(matrix1Id, ErrorCode.Denied);
+                    break;
+            }
+
+            return matrixId;
         }
 
         public override void shutdown()

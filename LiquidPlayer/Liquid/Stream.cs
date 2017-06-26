@@ -66,7 +66,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -114,7 +114,7 @@ namespace LiquidPlayer.Liquid
         {
             if (!isOpen)
             {
-                Throw(ExceptionCode.StreamNotOpen);
+                RaiseError(ErrorCode.StreamNotOpen);
                 return false;
             }
 
@@ -130,7 +130,7 @@ namespace LiquidPlayer.Liquid
         {
             if (!isOpen)
             {
-                Throw(ExceptionCode.StreamNotOpen);
+                RaiseError(ErrorCode.StreamNotOpen);
                 return 0;
             }
 
@@ -142,13 +142,13 @@ namespace LiquidPlayer.Liquid
         {
             if (!isOpen)
             {
-                Throw(ExceptionCode.StreamNotOpen);
+                RaiseError(ErrorCode.StreamNotOpen);
                 return 0;
             }
 
             if (!canSeek)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return 0;
             }
 
@@ -159,7 +159,7 @@ namespace LiquidPlayer.Liquid
         {
             if (isOpen)
             {
-                Throw(ExceptionCode.StreamOpen);
+                RaiseError(ErrorCode.StreamOpen);
                 return;
             }
 
@@ -170,19 +170,19 @@ namespace LiquidPlayer.Liquid
         {
             if (!isOpen)
             {
-                Throw(ExceptionCode.StreamNotOpen);
+                RaiseError(ErrorCode.StreamNotOpen);
                 return 0;
             }
 
             if (!canRead)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return 0;
             }
 
             if (!canSeek)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return 0;
             }
 
@@ -193,13 +193,13 @@ namespace LiquidPlayer.Liquid
         {
             if (!isOpen)
             {
-                Throw(ExceptionCode.StreamNotOpen);
+                RaiseError(ErrorCode.StreamNotOpen);
                 return 0;
             }
 
             if (!canRead)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return 0;
             }
 
@@ -210,19 +210,19 @@ namespace LiquidPlayer.Liquid
         {
             if (!isOpen)
             {
-                Throw(ExceptionCode.StreamNotOpen);
+                RaiseError(ErrorCode.StreamNotOpen);
                 return "";
             }
 
             if (!canRead)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return "";
             }
 
             if (count <= 0)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return "";
             }
 
@@ -233,19 +233,19 @@ namespace LiquidPlayer.Liquid
         {
             if (!isOpen)
             {
-                Throw(ExceptionCode.StreamNotOpen);
+                RaiseError(ErrorCode.StreamNotOpen);
                 return;
             }
 
             if (!canSeek)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 
             if (position < 0 || position > length)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
 
@@ -256,13 +256,13 @@ namespace LiquidPlayer.Liquid
         {
             if (!isOpen)
             {
-                Throw(ExceptionCode.StreamNotOpen);
+                RaiseError(ErrorCode.StreamNotOpen);
                 return;
             }
 
             if (length < 0)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
 
@@ -273,13 +273,13 @@ namespace LiquidPlayer.Liquid
         {
             if (!isOpen)
             {
-                Throw(ExceptionCode.StreamNotOpen);
+                RaiseError(ErrorCode.StreamNotOpen);
                 return;
             }
 
             if (!canWrite)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
         }
@@ -287,6 +287,8 @@ namespace LiquidPlayer.Liquid
         public override void Destructor()
         {
             Close();
+
+            base.Destructor();
         }
 
         public override void shutdown()

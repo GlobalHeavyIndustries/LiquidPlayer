@@ -34,7 +34,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -76,8 +76,8 @@ namespace LiquidPlayer.Liquid
                 default:
                     if (classId > 0)
                     {
-                        clone = objectManager.Clone;
-                        compare = objectManager.Compare;
+                        clone = objectManager.VClone;
+                        compare = objectManager.VCompare;
                         free = objectManager.Mark;
                     }
                     else
@@ -113,12 +113,12 @@ namespace LiquidPlayer.Liquid
                 {
                     if (newCapacity < 0)
                     {
-                        Throw(ExceptionCode.IllegalQuantity);
+                        RaiseError(ErrorCode.IllegalQuantity);
                         return;
                     }
                     else if (newCapacity > maxElementCount)
                     {
-                        Throw(ExceptionCode.OutOfMemory);
+                        RaiseError(ErrorCode.OutOfMemory);
                         return;
                     }
 
@@ -223,7 +223,7 @@ namespace LiquidPlayer.Liquid
 
                 if (newCapacity == capacity)
                 {
-                    Throw(ExceptionCode.OutOfMemory);
+                    RaiseError(ErrorCode.OutOfMemory);
                     return;
                 }
             }
@@ -409,7 +409,7 @@ namespace LiquidPlayer.Liquid
         {
             if (index < 0 || index >= count)
             {
-                Throw(ExceptionCode.BadSubscript);
+                RaiseError(ErrorCode.BadSubscript);
                 return -1;
             }
 
@@ -461,14 +461,14 @@ namespace LiquidPlayer.Liquid
 
         public bool Contains(int item)
         {
-            return (locate(item) != -1 ? true : false);
+            return (locate(item) != -1);
         }
 
         public void Delete(int index)
         {
             if (index < 0 || index >= count)
             {
-                Throw(ExceptionCode.BadSubscript);
+                RaiseError(ErrorCode.BadSubscript);
                 return;
             }
 
@@ -499,7 +499,7 @@ namespace LiquidPlayer.Liquid
         {
             if (isSorted == false)
             {
-                Throw(ExceptionCode.NotSorted);
+                RaiseError(ErrorCode.NotSorted);
                 return -1;
             }
 
@@ -543,7 +543,7 @@ namespace LiquidPlayer.Liquid
         {
             if (index < 0 || index > count)
             {
-                Throw(ExceptionCode.BadSubscript);
+                RaiseError(ErrorCode.BadSubscript);
                 return;
             }
 
@@ -568,19 +568,19 @@ namespace LiquidPlayer.Liquid
 
             if (clone != null && item != 0)
             {
-                item = clone(item);
+                item = clone(objectId, item);
             }
 
             dataSpace[index] = item;
 
             count++;
 
-            isSorted = (count == 1) ? true : false;
+            isSorted = (count == 1);
         }
 
         public bool IsEmpty()
         {
-            return (count == 0) ? true : false;
+            return (count == 0);
         }
 
         public int Remove(int item)
@@ -604,13 +604,13 @@ namespace LiquidPlayer.Liquid
         {
             if (first < 0 || first >= count || last < 0 || last >= count)
             {
-                Throw(ExceptionCode.BadSubscript);
+                RaiseError(ErrorCode.BadSubscript);
                 return;
             }
 
             if (first > last)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 
@@ -635,13 +635,13 @@ namespace LiquidPlayer.Liquid
         {
             if (first < 0 || first >= count || last < 0 || last >= count)
             {
-                Throw(ExceptionCode.BadSubscript);
+                RaiseError(ErrorCode.BadSubscript);
                 return;
             }
 
             if (first > last)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 
@@ -667,13 +667,13 @@ namespace LiquidPlayer.Liquid
         {
             if (first < 0 || first >= count || last < 0 || last >= count)
             {
-                Throw(ExceptionCode.BadSubscript);
+                RaiseError(ErrorCode.BadSubscript);
                 return;
             }
 
             if (first > last)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 

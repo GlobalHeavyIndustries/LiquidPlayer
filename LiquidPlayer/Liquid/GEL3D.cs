@@ -22,13 +22,21 @@ namespace LiquidPlayer.Liquid
         protected double yRotation;
         protected double zRotation;
 
-        protected List<int> renderList3D;
+        protected List<int> render3DList;
 
         public bool IsVisible
         {
             get
             {
                 return visible;
+            }
+        }
+
+        public bool GotFocus
+        {
+            get
+            {
+                return (objectManager.Focus == objectId) ? true : false;
             }
         }
 
@@ -104,11 +112,11 @@ namespace LiquidPlayer.Liquid
             }
         }
 
-        public List<int> RenderList
+        public List<int> Render3DList
         {
             get
             {
-                return renderList3D;
+                return render3DList;
             }
         }
 
@@ -127,7 +135,7 @@ namespace LiquidPlayer.Liquid
             this.yRotation = 0d;
             this.zRotation = 0d;
 
-            this.renderList3D = new List<int>();
+            this.render3DList = new List<int>();
         }
 
         public override string ToString()
@@ -140,7 +148,7 @@ namespace LiquidPlayer.Liquid
             //Throw(ExceptionCode.NotImplemented);
         }
 
-        public void Render(LiquidClass liquidClass, int perspectiveId)
+        public void VRender(LiquidClass liquidClass, int perspectiveId)
         {
             // preRender
 
@@ -187,7 +195,7 @@ namespace LiquidPlayer.Liquid
 
             Sprockets.Graphics.CleanMatrixStack(objectId);
 
-            var renderList3DClone = renderList3D.Clone();
+            var renderList3DClone = render3DList.Clone();
 
             foreach (var gel3DId in renderList3DClone)
             {
@@ -195,10 +203,8 @@ namespace LiquidPlayer.Liquid
 
                 liquidClass = objectManager[gel3DId].LiquidClass;
 
-                gel3D.Render(liquidClass, perspectiveId);
+                gel3D.VRender(liquidClass, perspectiveId);
             }
-
-            Sprockets.Graphics.CleanClipStack(objectId);
 
             Sprockets.Graphics.Ink = inkColor;
             Sprockets.Graphics.PopMatrix();
@@ -250,18 +256,6 @@ namespace LiquidPlayer.Liquid
             zPosition = zPos;
         }
 
-        //public void MoveDirection(double direction, double speed)
-        //{
-        //    xPosition += Math.Sin(direction * Math.PI / 180f) * speed;
-        //    yPosition += Math.Cos(direction * Math.PI / 180f) * speed;
-        //}
-
-        //public void MoveRelative(int xStep, int yStep)
-        //{
-        //    xPosition += xStep;
-        //    yPosition += yStep;
-        //}
-
         public void Center()
         {
             if (zPosition != 0d)
@@ -281,12 +275,6 @@ namespace LiquidPlayer.Liquid
             this.zScale = zScale;
         }
 
-        //public void Scale(double scale)
-        //{
-        //    xScale = scale;
-        //    yScale = scale;
-        //}
-
         public void Scale(double xScale, double yScale, double zScale)
         {
             this.xScale = xScale;
@@ -294,9 +282,22 @@ namespace LiquidPlayer.Liquid
             this.zScale = zScale;
         }
 
+        public override void Destructor()
+        {
+            Hide();
+
+            if (Sprockets.Input.MousePointingAt == objectId)
+            {
+                Sprockets.Input.MousePointingAt = 0;
+                Sprockets.Input.MousePointingAtNode = 0;
+            }
+
+            base.Destructor();
+        }
+
         public override void shutdown()
         {
-            renderList3D = null;
+            render3DList = null;
 
             base.shutdown();
         }

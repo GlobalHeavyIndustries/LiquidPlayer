@@ -217,6 +217,11 @@ namespace LiquidPlayer.DSL
             return list[id].OwnerId;
         }
 
+        public void SetOwner(int id, int ownerId)
+        {
+            list[id].OwnerId = ownerId;
+        }
+
         public T Read()
         {
             return list[cursor].Data;
@@ -277,6 +282,47 @@ namespace LiquidPlayer.DSL
             }
         }
 
+        public List<int> GetLeftover(int ownerId)
+        {
+            var leftoverItems = new List<int>();
+
+            var cursor = headNode;
+
+            while (cursor != 0)
+            {
+                if (list[cursor].OwnerId == ownerId)
+                {
+                    leftoverItems.Add(cursor);
+                }
+
+                cursor = list[cursor].Next;
+            }
+
+            return leftoverItems;
+        }
+
+        public void FreeLeftover(int ownerId)
+        {
+            var leftoverItems = new List<int>();
+
+            var cursor = headNode;
+
+            while (cursor != 0)
+            {
+                if (list[cursor].OwnerId == ownerId)
+                {
+                    leftoverItems.Add(cursor);
+                }
+
+                cursor = list[cursor].Next;
+            }
+
+            foreach (var id in leftoverItems)
+            {
+                Free(id);
+            }
+        }
+
         private void buildFreeList()
         {
             list[freeNode] = new Node
@@ -306,7 +352,7 @@ namespace LiquidPlayer.DSL
 
     public class LongManager
     {
-        private DSL.FreeList<long> bag = new DSL.FreeList<long>();
+        private FreeList<long> bag = new FreeList<long>();
 
         public int Count
         {
@@ -351,9 +397,9 @@ namespace LiquidPlayer.DSL
             return bag.Once(ownerId, data);
         }
 
-        public int Clone(int id)
+        public int Clone(int ownerId, int id)
         {
-            return bag.New(bag.GetOwner(id), bag[id]);
+            return bag.New(ownerId, bag[id]);
         }
 
         public int Compare(int lhs, int rhs)
@@ -397,6 +443,11 @@ namespace LiquidPlayer.DSL
             return bag.GetOwner(id);
         }
 
+        public void SetOwner(int id, int ownerId)
+        {
+            bag.SetOwner(id, ownerId);
+        }
+
         public long Read()
         {
             return bag.Read();
@@ -406,13 +457,23 @@ namespace LiquidPlayer.DSL
         {
             bag.Free(id);
         }
+
+        public List<int> GetLeftover(int ownerId)
+        {
+            return bag.GetLeftover(ownerId);
+        }
+
+        public void FreeLeftover(int ownerId)
+        {
+            bag.FreeLeftover(ownerId);
+        }
     }
 
     // --------------------------------------------------------------------------------------------------------------------------------------------------------
 
     public class DoubleManager
     {
-        private DSL.FreeList<double> bag = new DSL.FreeList<double>();
+        private FreeList<double> bag = new FreeList<double>();
 
         public int Count
         {
@@ -457,9 +518,9 @@ namespace LiquidPlayer.DSL
             return bag.Once(ownerId, data);
         }
 
-        public int Clone(int id)
+        public int Clone(int ownerId, int id)
         {
-            return bag.New(bag.GetOwner(id), bag[id]);
+            return bag.New(ownerId, bag[id]);
         }
 
         public int Compare(int lhs, int rhs)
@@ -503,6 +564,11 @@ namespace LiquidPlayer.DSL
             return bag.GetOwner(id);
         }
 
+        public void SetOwner(int id, int ownerId)
+        {
+            bag.SetOwner(id, ownerId);
+        }
+
         public double Read()
         {
             return bag.Read();
@@ -512,13 +578,23 @@ namespace LiquidPlayer.DSL
         {
             bag.Free(id);
         }
+
+        public List<int> GetLeftover(int ownerId)
+        {
+            return bag.GetLeftover(ownerId);
+        }
+
+        public void FreeLeftover(int ownerId)
+        {
+            bag.FreeLeftover(ownerId);
+        }
     }
 
     // --------------------------------------------------------------------------------------------------------------------------------------------------------
 
     public class StringManager
     {
-        private DSL.FreeList<string> bag = new DSL.FreeList<string>();
+        private FreeList<string> bag = new FreeList<string>();
 
         public int Count
         {
@@ -563,9 +639,9 @@ namespace LiquidPlayer.DSL
             return bag.Once(ownerId, data);
         }
 
-        public int Clone(int id)
+        public int Clone(int ownerId, int id)
         {
-            return bag.New(bag.GetOwner(id), bag[id]);
+            return bag.New(ownerId, bag[id]);
         }
 
         public int Compare(int lhs, int rhs)
@@ -606,6 +682,11 @@ namespace LiquidPlayer.DSL
         public int GetOwner(int id)
         {
             return bag.GetOwner(id);
+        }
+
+        public void SetOwner(int id, int ownerId)
+        {
+            bag.SetOwner(id, ownerId);
         }
 
         public string Read()
@@ -653,6 +734,16 @@ namespace LiquidPlayer.DSL
         public void Free(int id)
         {
             bag.Free(id);
+        }
+
+        public List<int> GetLeftover(int ownerId)
+        {
+            return bag.GetLeftover(ownerId);
+        }
+
+        public void FreeLeftover(int ownerId)
+        {
+            bag.FreeLeftover(ownerId);
         }
     }
 

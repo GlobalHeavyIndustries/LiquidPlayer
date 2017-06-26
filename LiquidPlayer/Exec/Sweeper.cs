@@ -68,11 +68,7 @@ namespace LiquidPlayer.Exec
             {
                 // Something bad happened. Free all objects connected to this task using brute force.
 
-                var tree = new List<int>();
-
-                addChildren(tree, taskId);
-
-                tree.Reverse();
+                var tree = task.GetTree();
 
                 while (tree.Count != 0)
                 {
@@ -80,23 +76,11 @@ namespace LiquidPlayer.Exec
 
                     tree.RemoveAt(0);
 
-                    Program.Exec.ObjectManager.Kill(id);
+                    Program.Exec.ObjectManager.Free(id);
                 }
             }
 
             freeObjects();
-        }
-
-        private void addChildren(List<int> tree, int id)
-        {
-            tree.Add(id);
-
-            var list = Program.Exec.ObjectManager.GetChildren(id);
-
-            for (var index = 0; index < list.Count; index++)
-            {
-                addChildren(tree, list[index]);
-            }
         }
     }
 }

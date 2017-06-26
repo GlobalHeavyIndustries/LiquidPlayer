@@ -49,11 +49,11 @@ namespace LiquidPlayer.Liquid
                 set;
             }
 
-            public bool IsTrap
-            {
-                get;
-                set;
-            }
+            //public bool IsTrap
+            //{
+            //    get;
+            //    set;
+            //}
 
             public int Quantum
             {
@@ -145,19 +145,7 @@ namespace LiquidPlayer.Liquid
                 set;
             }
 
-            public int LP
-            {
-                get;
-                set;
-            }
-
-            public int LN
-            {
-                get;
-                set;
-            }
-
-            public int FN
+            public int LastPC
             {
                 get;
                 set;
@@ -174,8 +162,7 @@ namespace LiquidPlayer.Liquid
         protected string tag;
         protected bool debugMode;
 
-        protected string filePath;
-        protected string fileName;
+        protected string path;
         protected string arguments;
         protected string currentDirectory;
 
@@ -183,6 +170,9 @@ namespace LiquidPlayer.Liquid
         protected string[] stringTable;
         protected int[] aliasTable;
 
+        protected List<FunctionDelegate> stubs;
+
+        protected List<CodeTracker> codeTrackers;
         protected int[] codeSpace;
         protected int[] stack;
         protected Queue<int> messageQueue;
@@ -204,11 +194,9 @@ namespace LiquidPlayer.Liquid
         protected int standardErrorId;
         protected Stream standardError;
 
-        protected int exceptionId;
-        protected Exception exception;
+        protected ErrorCode errorCode;
+        protected string errorData;
 
-        protected ExceptionCode throwCode;
-        protected string throwData;
         protected int exitCode;
 
         public string Tag
@@ -255,11 +243,11 @@ namespace LiquidPlayer.Liquid
             }
         }
 
-        public int[] DataSpace
+        public List<FunctionDelegate> Stubs
         {
             get
             {
-                return dataSpace;
+                return stubs;
             }
         }
 
@@ -268,6 +256,14 @@ namespace LiquidPlayer.Liquid
             get
             {
                 return codeSpace;
+            }
+        }
+
+        public int[] DataSpace
+        {
+            get
+            {
+                return dataSpace;
             }
         }
 
@@ -291,19 +287,19 @@ namespace LiquidPlayer.Liquid
             }
         }
 
-        public ExceptionCode ThrowCode
+        public ErrorCode ErrorCode
         {
             get
             {
-                return throwCode;
+                return errorCode;
             }
         }
 
-        public string ThrowData
+        public string ErrorData
         {
             get
             {
-                return throwData;
+                return errorData;
             }
         }
 
@@ -315,13 +311,13 @@ namespace LiquidPlayer.Liquid
             }
         }
 
-        public static int NewTask(string fileName, string arguments, int parentId = 0)
+        public static int NewTask(string path, string arguments, int parentId = 0)
         {
             var id = LiquidPlayer.Program.Exec.ObjectManager.New(LiquidClass.Task);
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -329,14 +325,27 @@ namespace LiquidPlayer.Liquid
                 LiquidPlayer.Program.Exec.ObjectManager.Hook(id, parentId);
             }
 
-            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new Task(id, fileName, arguments);
+            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new Task(id, path, arguments);
 
             return id;
         }
 
-        public Task(int id, string fileName, string arguments)
+        public Task(int id, string path, string arguments)
             : base(id)
         {
+            if (!path.EndsWith(".ldx"))
+            {
+                path += ".ldx";
+            }
+
+            var resolvedPath = Util.FindFile(path, LiquidPlayer.Program.SharedPath);
+
+            if (resolvedPath == "")
+            {
+                base.RaiseError(ErrorCode.FileNotFound, Path.GetFileName(path));
+                return;
+            }
+
             this.PCB = new ProcessControlBlock()
             {
                 State = ProcessState.New,
@@ -349,22 +358,17 @@ namespace LiquidPlayer.Liquid
             this.tag = "";
             this.debugMode = false;
 
-            var filePath = Path.GetDirectoryName(fileName);
-
-            if (filePath == "")
-            {
-                filePath = Directory.GetCurrentDirectory();
-            }
-
-            this.filePath = filePath;
-            this.fileName = Path.GetFileName(fileName);
+            this.path = resolvedPath;
             this.arguments = arguments;
-            this.currentDirectory = filePath;
+            this.currentDirectory = Path.GetDirectoryName(resolvedPath);
 
             this.fileTable = null;
             this.stringTable = null;
             this.aliasTable = null;
 
+            this.stubs = new List<FunctionDelegate>();
+
+            this.codeTrackers = null;
             this.codeSpace = null;
             this.stack = new int[PCB.SZ];
             this.messageQueue = new Queue<int>();
@@ -389,13 +393,8 @@ namespace LiquidPlayer.Liquid
 
             standardError.Open();
 
-            loadTask(fileName, arguments);
+            loadTask(resolvedPath, arguments);
 
-            this.exceptionId = 0;
-            this.exception = null;
-
-            this.throwCode = ExceptionCode.None;
-            this.throwData = "";
             this.exitCode = 0;
 
             this.PCB.State = ProcessState.Ready;
@@ -403,7 +402,7 @@ namespace LiquidPlayer.Liquid
 
         public override string ToString()
         {
-            return $"Task (Tag: \"{tag}\")";
+            return $"Task (Tag: \"{tag}\"), Path: \"{path}\")";
         }
 
         private int readInt(BinaryReader reader)
@@ -471,41 +470,6 @@ namespace LiquidPlayer.Liquid
             }
         }
 
-        private LiquidClass bindNativeClass(BinaryReader reader)
-        {
-            var liquidClassTag = "";
-            var liquidClass = LiquidClass.None;
-
-            var baseLiquidClassTag = "";
-            var baseLiquidClass = LiquidClass.None;
-
-            var alias = readString(reader);
-
-            liquidClassTag = alias;
-
-            baseLiquidClassTag = readString(reader);
-
-            if (baseLiquidClassTag != "")
-            {
-                baseLiquidClass = LiquidPlayer.Program.ClassManager.Find(baseLiquidClassTag);
-
-                if (baseLiquidClass == LiquidClass.None)
-                {
-                    throw new System.Exception("Class not found");
-                }
-            }
-
-            liquidClass = LiquidPlayer.Program.ClassManager.Find(liquidClassTag);
-
-            if (liquidClass == LiquidClass.None)
-            {
-                Throw(ExceptionCode.OutOfMemory);
-                return 0;
-            }
-
-            return liquidClass;
-        }
-
         private LiquidClass bindClass(BinaryReader reader)
         {
             var liquidClassTag = "";
@@ -526,7 +490,42 @@ namespace LiquidPlayer.Liquid
 
                 if (baseLiquidClass == LiquidClass.None)
                 {
-                    throw new System.Exception("Class not found");
+                    throw new Exception("Class not found");
+                }
+            }
+
+            liquidClass = LiquidPlayer.Program.ClassManager.Find(liquidClassTag);
+
+            if (liquidClass == LiquidClass.None)
+            {
+                RaiseError(ErrorCode.OutOfMemory);
+                return 0;
+            }
+
+            return liquidClass;
+        }
+
+        private LiquidClass bindCustomClass(BinaryReader reader)
+        {
+            var liquidClassTag = "";
+            var liquidClass = LiquidClass.None;
+
+            var baseLiquidClassTag = "";
+            var baseLiquidClass = LiquidClass.None;
+
+            var alias = readString(reader);
+
+            liquidClassTag = alias;
+
+            baseLiquidClassTag = readString(reader);
+
+            if (baseLiquidClassTag != "")
+            {
+                baseLiquidClass = LiquidPlayer.Program.ClassManager.Find(baseLiquidClassTag);
+
+                if (baseLiquidClass == LiquidClass.None)
+                {
+                    throw new Exception("Class not found");
                 }
             }
 
@@ -536,7 +535,7 @@ namespace LiquidPlayer.Liquid
 
             if (liquidClass == LiquidClass.None)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
                 return 0;
             }
 
@@ -545,82 +544,20 @@ namespace LiquidPlayer.Liquid
             return liquidClass;
         }
 
-        private int bindNativeMethod(BinaryReader reader)
+        private int bindStub(BinaryReader reader)
         {
-            var liquidClassTag = "";
-            var liquidClass = LiquidClass.None;
+            var stub = readString(reader);
 
-            var methodTag = "";
-            var methodId = 0;
-            var parameters = "";
-            var returnLiquidClassTag = "";
-            var returnLiquidClass = LiquidClass.None;
-            var returnLiquidSubclass = LiquidClass.None;
+            var functionDelegate = LiquidPlayer.Program.StandardLibrary.GetFunctionDelegate(stub);
 
-            var alias = readString(reader);
-
-            var index = alias.IndexOf('|');
-
-            liquidClassTag = alias.Substring(0, index);
-
-            liquidClass = LiquidPlayer.Program.ClassManager.Find(liquidClassTag);
-
-            if (liquidClass == LiquidClass.None)
+            if (functionDelegate == null)
             {
-                throw new System.Exception("Class not found");
-            }
-            alias = alias.Substring(index + 1);
-
-            index = alias.IndexOf(':');
-
-            if (index == 0)
-            {
-                alias = alias.Substring(1);
-
-                returnLiquidClass = LiquidClass.None;
-            }
-            else
-            {
-                returnLiquidClassTag = alias.Substring(0, index);
-
-                LiquidPlayer.Program.ClassManager.Find(returnLiquidClassTag, out returnLiquidClass, out returnLiquidSubclass);
-
-                if (returnLiquidClass == LiquidClass.None)
-                {
-                    throw new System.Exception("Class not found");
-                }
-
-                alias = alias.Substring(index + 1);
+                throw new Exception("Stub not found");
             }
 
-            index = alias.IndexOf('(');
+            stubs.Add(functionDelegate);
 
-            parameters = alias.Substring(index);
-
-            methodTag = alias.Substring(0, index);
-
-            var stub = LiquidPlayer.Program.StandardLibrary.BindMethod(liquidClass, methodTag, parameters, returnLiquidClass, returnLiquidSubclass);
-
-            if (stub == null)
-            {
-                throw new System.Exception("Native method not found");
-            }
-
-            methodId = LiquidPlayer.Program.ClassManager.FindMethod(liquidClass, methodTag, parameters, new LiquidType(returnLiquidClass, returnLiquidSubclass));
-
-            if (methodId == 0)
-            {
-                methodId = LiquidPlayer.Program.ClassManager.AddMethod(liquidClass, methodTag, parameters, new LiquidType(returnLiquidClass, returnLiquidSubclass), stub);
-            }
-
-            if (methodId == 0)
-            {
-                Throw(ExceptionCode.OutOfMemory);
-
-                return 0;
-            }
-
-            return methodId;
+            return stubs.Count - 1;
         }
 
         private int bindVirtualMethod(BinaryReader reader)
@@ -637,6 +574,8 @@ namespace LiquidPlayer.Liquid
 
             var alias = readString(reader);
 
+            var stub = alias;
+
             var index = alias.IndexOf('|');
 
             liquidClassTag = alias.Substring(0, index);
@@ -645,7 +584,7 @@ namespace LiquidPlayer.Liquid
 
             if (liquidClass == LiquidClass.None)
             {
-                throw new System.Exception("Class not found");
+                throw new Exception("Class not found");
             }
             alias = alias.Substring(index + 1);
 
@@ -665,7 +604,7 @@ namespace LiquidPlayer.Liquid
 
                 if (returnLiquidClass == LiquidClass.None)
                 {
-                    throw new System.Exception("Class not found");
+                    throw new Exception("Class not found");
                 }
 
                 alias = alias.Substring(index + 1);
@@ -681,113 +620,63 @@ namespace LiquidPlayer.Liquid
 
             if (type == 1)
             {
-                var stub = LiquidPlayer.Program.StandardLibrary.BindMethod(liquidClass, methodTag, parameters, returnLiquidClass, returnLiquidSubclass);
+                methodId = LiquidPlayer.Program.ClassManager.FindVirtualMethod(liquidClass, methodTag, parameters, new LiquidType(returnLiquidClass, returnLiquidSubclass));
 
-                if (stub == null)
+                if (methodId == -1)
                 {
-                    throw new System.Exception("Virtual method not found");
+                    var functionDelegate = LiquidPlayer.Program.StandardLibrary.GetFunctionDelegate(stub);
+
+                    if (functionDelegate == null)
+                    {
+                        throw new Exception("Virtual method not found");
+                    }
+
+                    methodId = LiquidPlayer.Program.ClassManager.AddVirtualMethod(liquidClass, methodTag, parameters, new LiquidType(returnLiquidClass, returnLiquidSubclass), stub, functionDelegate);
                 }
-
-                methodId = LiquidPlayer.Program.ClassManager.FindMethod(liquidClass, methodTag, parameters, new LiquidType(returnLiquidClass, returnLiquidSubclass));
-
-                if (methodId == 0)
+                else
                 {
-                    methodId = LiquidPlayer.Program.ClassManager.AddVirtualMethod(liquidClass, methodTag, parameters, new LiquidType(returnLiquidClass, returnLiquidSubclass), stub);
+                    stub = LiquidPlayer.Program.ClassManager[liquidClass].Methods[methodId].Stub;
+
+                    var functionDelegate = LiquidPlayer.Program.StandardLibrary.GetFunctionDelegate(stub);
+
+                    if (functionDelegate == null)
+                    {
+                        throw new Exception("Virtual method not found");
+                    }
+
+                    LiquidPlayer.Program.ClassManager.SetVirtualMethodTarget(liquidClass, methodId, stub, functionDelegate);
+
+                    LiquidPlayer.Program.ClassManager.BindMethod(liquidClass, methodTag, -1);
                 }
             }
             else
             {
-                var address = readInt(reader);
+                methodId = LiquidPlayer.Program.ClassManager.FindVirtualMethod(liquidClass, methodTag, parameters, new LiquidType(returnLiquidClass, returnLiquidSubclass));
 
-                methodId = LiquidPlayer.Program.ClassManager.FindMethod(liquidClass, methodTag, parameters, new LiquidType(returnLiquidClass, returnLiquidSubclass));
-
-                if (methodId == 0)
+                if (methodId == -1)
                 {
+                    var address = readInt(reader);
+
                     methodId = LiquidPlayer.Program.ClassManager.AddVirtualMethod(liquidClass, methodTag, parameters, new LiquidType(returnLiquidClass, returnLiquidSubclass), address);
+                }
+                else
+                {
+                    var address = readInt(reader);
+
+                    LiquidPlayer.Program.ClassManager.SetVirtualMethodTarget(liquidClass, methodId, address);
+
+                    LiquidPlayer.Program.ClassManager.BindMethod(liquidClass, methodTag, address);
                 }
             }
 
-            if (methodId == 0)
+            if (methodId == -1)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
 
-                return 0;
+                return -1;
             }
 
             return methodId;
-        }
-
-        private int bindFunction(BinaryReader reader)
-        {
-            var liquidClassTag = "";
-            var liquidClass = LiquidClass.None;
-
-            var functionTag = "";
-            var functionId = 0;
-            var parameters = "";
-            var returnLiquidClassTag = "";
-            var returnLiquidClass = LiquidClass.None;
-            var returnLiquidSubclass = LiquidClass.None;
-
-            var alias = readString(reader);
-
-            var index = alias.IndexOf('|');
-
-            liquidClassTag = alias.Substring(0, index);
-
-            liquidClass = LiquidPlayer.Program.ClassManager.Find(liquidClassTag);
-
-            if (liquidClass == LiquidClass.None)
-            {
-                throw new System.Exception("Class not found");
-            }
-            alias = alias.Substring(index + 1);
-
-            index = alias.IndexOf(':');
-
-            if (index == 0)
-            {
-                alias = alias.Substring(1);
-
-                returnLiquidClass = LiquidClass.None;
-            }
-            else
-            {
-                returnLiquidClassTag = alias.Substring(0, index);
-
-                LiquidPlayer.Program.ClassManager.Find(returnLiquidClassTag, out returnLiquidClass, out returnLiquidSubclass);
-
-                if (returnLiquidClass == LiquidClass.None)
-                {
-                    throw new System.Exception("Class not found");
-                }
-
-                alias = alias.Substring(index + 1);
-            }
-
-            index = alias.IndexOf('(');
-
-            parameters = alias.Substring(index);
-
-            functionTag = alias.Substring(0, index);
-
-            var stub = LiquidPlayer.Program.StandardLibrary.BindFunction(liquidClass, functionTag, parameters, returnLiquidClass, returnLiquidSubclass);
-
-            if (stub == null)
-            {
-                throw new System.Exception("Function not found");
-            }
-
-            functionId = LiquidPlayer.Program.API.AddFunction(liquidClass, functionTag, parameters, returnLiquidClass, returnLiquidSubclass, stub);
-
-            if (functionId == 0)
-            {
-                Throw(ExceptionCode.OutOfMemory);
-
-                return 0;
-            }
-
-            return functionId;
         }
 
         private int bindReservedFunction(BinaryReader reader)
@@ -812,7 +701,7 @@ namespace LiquidPlayer.Liquid
 
             if (liquidClass == LiquidClass.None)
             {
-                throw new System.Exception("Class not found");
+                throw new Exception("Class not found");
             }
             alias = alias.Substring(index + 1);
 
@@ -832,7 +721,7 @@ namespace LiquidPlayer.Liquid
 
                 if (returnLiquidClass == LiquidClass.None)
                 {
-                    throw new System.Exception("Class not found");
+                    throw new Exception("Class not found");
                 }
 
                 alias = alias.Substring(index + 1);
@@ -848,16 +737,16 @@ namespace LiquidPlayer.Liquid
 
             functionId = LiquidPlayer.Program.ClassManager.FindFunction(liquidClass, functionTag, parameters, new LiquidType(returnLiquidClass, returnLiquidSubclass));
 
-            if (functionId == 0)
+            if (functionId == -1)
             {
                 functionId = LiquidPlayer.Program.ClassManager.AddFunction(liquidClass, functionTag, parameters, new LiquidType(returnLiquidClass, returnLiquidSubclass), address);
             }
             
-            if (functionId == 0)
+            if (functionId == -1)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
 
-                return 0;
+                return -1;
             }
 
             return functionId;
@@ -873,27 +762,28 @@ namespace LiquidPlayer.Liquid
             {
                 var liquidClass = LiquidClass.None;
 
+                var stubId = 0;
                 var methodId = 0;
                 var functionId = 0;
 
                 switch (readInt(reader))
                 {
                     case 1:
-                        liquidClass = bindNativeClass(reader);
-
-                        aliasTable[i] = (int)liquidClass;
-
-                        break;
-                    case 2:
                         liquidClass = bindClass(reader);
 
                         aliasTable[i] = (int)liquidClass;
 
                         break;
-                    case 3:
-                        methodId = bindNativeMethod(reader);
+                    case 2:
+                        liquidClass = bindCustomClass(reader);
 
-                        aliasTable[i] = methodId;
+                        aliasTable[i] = (int)liquidClass;
+
+                        break;
+                    case 3:
+                        stubId = bindStub(reader);
+
+                        aliasTable[i] = stubId;
 
                         break;
                     case 4:
@@ -903,45 +793,44 @@ namespace LiquidPlayer.Liquid
 
                         break;
                     case 5:
-                        functionId = bindFunction(reader);
-
-                        aliasTable[i] = functionId;
-
-                        break;
-                    case 6:
                         functionId = bindReservedFunction(reader);
 
                         aliasTable[i] = functionId;
 
                         break;
                     default:
-                        throw new System.Exception("Corrupted executable");
+                        throw new Exception("Corrupted executable");
                 }
             }
         }
 
-        private void loadTask(string fileName, string commandLine)
+        private void loadCodeTrackers(BinaryReader reader)
         {
-            var sourceFilePath = Path.GetDirectoryName(fileName);
+            var count = readInt(reader);
 
-            if (sourceFilePath == "")
+            codeTrackers = new List<CodeTracker>();
+
+            for (var i = 1; i <= count; i++)
             {
-                sourceFilePath = Directory.GetCurrentDirectory();
+                var fileNumber = readInt(reader);
+                var lineNumber = readInt(reader);
+                var linePosition = readInt(reader);
+
+                var startPosition = readInt(reader);
+                var endPosition = readInt(reader);
+
+                var codeTracker = new CodeTracker(fileNumber, lineNumber, linePosition);
+
+                codeTracker.StartPosition = startPosition;
+                codeTracker.EndPosition = endPosition;
+
+                codeTrackers.Add(codeTracker);
             }
+        }
 
-            var sourceFileName = Path.GetFileName(fileName);
-
-            if (!sourceFileName.EndsWith(".ldx"))
-            {
-                sourceFileName += ".ldx";
-            }
-
-            if (!System.IO.File.Exists(sourceFilePath + "\\" + sourceFileName))
-            {
-                Throw(ExceptionCode.FileNotFound);
-            }
-
-            Compression.DecompressFile(sourceFilePath + "\\" + sourceFileName, LiquidPlayer.Program.TempPath + "temp.ldx", CompressionType.GZip);
+        private void loadTask(string path, string commandLine)
+        {
+            Compression.DecompressFile(path, LiquidPlayer.Program.TempPath + "temp.ldx", CompressionType.GZip);
 
             using (BinaryReader reader = new BinaryReader(System.IO.File.Open(LiquidPlayer.Program.TempPath + "temp.ldx", FileMode.Open)))
             {
@@ -949,13 +838,13 @@ namespace LiquidPlayer.Liquid
 
                 if (header.Substring(0, 4) != "LDXv")
                 {
-                    Throw(ExceptionCode.Denied, "File header is corrupted");
+                    base.RaiseError(ErrorCode.Denied, "File header is corrupted");
                     return;
                 }
 
                 if (header.Substring(4, 4) != "2.00")
                 {
-                    Throw(ExceptionCode.Denied, "Unsupported file version");
+                    base.RaiseError(ErrorCode.Denied, "Unsupported file version");
                     return;
                 }
 
@@ -963,12 +852,12 @@ namespace LiquidPlayer.Liquid
 
                 if (taskType < 1 || taskType > 4)
                 {
-                    Throw(ExceptionCode.Denied, "Unsupported task type");
+                    base.RaiseError(ErrorCode.Denied, "Unsupported task type");
                 }
 
                 tag = readString(reader);
 
-                debugMode = (readInt(reader) == 1) ? true : false;
+                debugMode = (readInt(reader) == 1);
 
                 loadFileTable(reader);
 
@@ -977,6 +866,8 @@ namespace LiquidPlayer.Liquid
                 loadAliasTable(reader);
 
                 var memoryRequired = readInt(reader);
+
+                loadCodeTrackers(reader);
 
                 dataSpace = new int[memoryRequired];
 
@@ -1020,11 +911,52 @@ namespace LiquidPlayer.Liquid
         //    else
         //    {
         //        var obj = objectManager[parentId].LiquidObject as Object;
-        //        obj.RenderList.Remove(id);
+        //        obj.ChildrenList.Remove(id);
         //    }
         //}
 
-        public virtual void NextStep()
+        public List<int> GetTree()
+        {
+            var tree = new List<int>();
+
+            addChildren(tree, objectId);
+
+            tree.Reverse();
+
+            return tree;
+        }
+
+        private void addChildren(List<int> tree, int id)
+        {
+            tree.Add(id);
+
+            var list = LiquidPlayer.Program.Exec.ObjectManager.GetChildren(id);
+
+            for (var index = 0; index < list.Count; index++)
+            {
+                addChildren(tree, list[index]);
+            }
+        }
+
+        public CodeTracker GetCodeTracker(int position)
+        {
+            foreach (var codeTracker in codeTrackers)
+            {
+                if (position >= codeTracker.StartPosition && position <= codeTracker.EndPosition)
+                {
+                    return codeTracker;
+                }
+            }
+
+            return null;
+        }
+
+        public void RestoreState()
+        {
+            Directory.SetCurrentDirectory(currentDirectory);
+        }
+
+        public virtual void VRun()
         {
             LiquidPlayer.Program.Exec.VirtualMachine.Run(objectId);
 
@@ -1036,15 +968,22 @@ namespace LiquidPlayer.Liquid
             }
         }
 
+        public void SaveState()
+        {
+            currentDirectory = Directory.GetCurrentDirectory();
+        }
+
         protected override bool callback(int messageId)
         {
             var message = objectManager[messageId].LiquidObject as Message;
 
             if (message.IsTo(objectId))
             {
-                if (message.GetBody() == (int)MessageBody.KeyUp)
+                if (message.GetBody() == MessageBody.KeyUp)
                 {
-                    switch (message.GetData())
+                    var data = Convert.ToInt32(message.GetData());
+
+                    switch (data)
                     {
                         case (int)LiquidKey.CTRL_C:
                             signals |= Signals.CTRL_C;
@@ -1112,6 +1051,11 @@ namespace LiquidPlayer.Liquid
             return !IsDone(taskId);
         }
 
+        //public int CheckTrap()
+        //{
+        //    return objectManager.Copy(exceptionId);
+        //}
+
         public void CleanMessageQueue(int id)
         {
             var queue = new Queue<int>(messageQueue.Count);
@@ -1137,6 +1081,15 @@ namespace LiquidPlayer.Liquid
             signals = 0;
         }
 
+        //public int EmptyTrap()
+        //{
+        //    var exceptionId = this.exceptionId;
+
+        //    this.exceptionId = 0;
+
+        //    return exceptionId;
+        //}
+
         public void End(int taskId)
         {
             var task = objectManager.GetTask(taskId);
@@ -1151,7 +1104,7 @@ namespace LiquidPlayer.Liquid
 
         public void ErrorOut(string data)
         {
-            standardError.Write(data + (char)13 + (char)10);
+            standardError.Write(data + Environment.NewLine);
         }
 
         public int GetCommandLine()
@@ -1159,7 +1112,7 @@ namespace LiquidPlayer.Liquid
             return objectManager.Copy(commandLineId);
         }
 
-        public string GetError()
+        public string ReadErrorStream()
         {
             var data = new StringBuilder();
 
@@ -1191,7 +1144,7 @@ namespace LiquidPlayer.Liquid
 
                 list.Add(id);
 
-                FreeString(objectId, id);
+                FreeString(id);
             }
 
             return listId;
@@ -1213,7 +1166,7 @@ namespace LiquidPlayer.Liquid
 
                 list.Add(id);
 
-                FreeString(objectId, id);
+                FreeString(id);
             }
 
             return listId;
@@ -1238,14 +1191,14 @@ namespace LiquidPlayer.Liquid
 
         public bool IsDone()
         {
-            return (PCB.State == ProcessState.Crashed || PCB.State == ProcessState.Finished) ? true : false;
+            return (PCB.State == ProcessState.Crashed || PCB.State == ProcessState.Finished);
         }
 
         public bool IsDone(int taskId)
         {
             var task = objectManager.GetTask(taskId);
 
-            return (task.PCB.State == ProcessState.Crashed || task.PCB.State == ProcessState.Finished) ? true : false;
+            return (task.PCB.State == ProcessState.Crashed || task.PCB.State == ProcessState.Finished);
         }
 
         public bool IsSignal(int signal)
@@ -1284,26 +1237,24 @@ namespace LiquidPlayer.Liquid
             return pipeId;
         }
 
-        public void Raise(ExceptionCode code, string data = "")
+        public void RaiseError(ErrorCode errorCode, string errorData, int parentId = 0)
         {
-            throwCode = code;
-            throwData = data;
-        }
+            var pc = PCB.LastPC;
 
-        public void RaiseException(int fileNumber, int lineNumber, int parentId = 0)
-        {
-            var exceptionId = Exception.NewException(fileTable[fileNumber], lineNumber, throwCode, throwData, parentId);
-            objectManager.Assign(ref this.exceptionId, exceptionId);
+            var codeTracker = GetCodeTracker(pc);
 
-            throwCode = ExceptionCode.None;
-            throwData = "";
+            var fileNumber = codeTracker.FileNumber;
+            var lineNumber = codeTracker.LineNumber;
+
+            this.errorCode = errorCode;
+            this.errorData = errorData;
         }
 
         public void Resume()
         {
             if (PCB.State != ProcessState.Suspended)
             {
-                Raise(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 
@@ -1314,7 +1265,7 @@ namespace LiquidPlayer.Liquid
         {
             if (PCB.State != ProcessState.Ready)
             {
-                Raise(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 
@@ -1327,7 +1278,7 @@ namespace LiquidPlayer.Liquid
         {
             if (PCB.State != ProcessState.Running && PCB.State != ProcessState.Waiting)
             {
-                Raise(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 
@@ -1336,11 +1287,18 @@ namespace LiquidPlayer.Liquid
             PCB.State = ProcessState.Suspended;
         }
 
+        //public void Trap(bool isTrap)
+        //{
+        //    PCB.IsTrap = isTrap;
+        //}
+
         public override void Destructor()
         {
             standardInput.Flush();
             standardOutput.Flush();
             standardError.Flush();
+
+            base.Destructor();
         }
 
         public override void shutdown()
@@ -1357,17 +1315,24 @@ namespace LiquidPlayer.Liquid
             objectManager.Mark(standardErrorId);
             standardError = null;
 
-            objectManager.Mark(exceptionId);
-            exception = null;
-
             System.Diagnostics.Debug.Assert(messageQueue.Count == 0);
 
             fileTable = null;
             stringTable = null;
             aliasTable = null;
+            stubs = null;
             codeSpace = null;
             stack = null;
             messageQueue = null;
+
+            if (PCB.State == ProcessState.Crashed)
+            {
+                LiquidPlayer.Program.Exec.LongManager.FreeLeftover(objectId);
+
+                LiquidPlayer.Program.Exec.DoubleManager.FreeLeftover(objectId);
+
+                LiquidPlayer.Program.Exec.StringManager.FreeLeftover(objectId);
+            }
 
             base.shutdown();
         }

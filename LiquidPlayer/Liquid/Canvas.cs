@@ -44,7 +44,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -86,6 +86,41 @@ namespace LiquidPlayer.Liquid
         public override string ToString()
         {
             return $"Canvas (Resolution: {width}x{height})";
+        }
+
+        public void Clear()
+        {
+            bitmap.Clear();
+        }
+
+        public void DoubleBuffer()
+        {
+            bitmap.DoubleBuffer();
+        }
+
+        public void Poke(int index, uint color)
+        {
+            bitmap.Poke(index, color);
+        }
+
+        public uint Peek(int index)
+        {
+            return bitmap.Peek(index);
+        }
+
+        public void SingleBuffer()
+        {
+            bitmap.SingleBuffer();
+        }
+
+        public void Smooth(bool linearFilter)
+        {
+            bitmap.Smooth(linearFilter);
+        }
+
+        public void SwapBuffers()
+        {
+            bitmap.SwapBuffers();
         }
 
         protected override void render(int orthoId)

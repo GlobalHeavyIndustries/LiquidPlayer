@@ -27,6 +27,14 @@ namespace LiquidPlayer.Liquid
             }
         }
 
+        public bool GotFocus
+        {
+            get
+            {
+                return (objectManager.Focus == objectId) ? true : false;
+            }
+        }
+
         public int Priority
         {
             get
@@ -116,19 +124,9 @@ namespace LiquidPlayer.Liquid
             //Throw(ExceptionCode.NotImplemented);
         }
 
-        public void Render(LiquidClass liquidClass, int orthoId, double xBorder = 0d, double yBorder = 0d, double xSnap = 1d, double ySnap = 1d)
+        public void VRender(LiquidClass liquidClass, int orthoId, double xBorder = 0d, double yBorder = 0d, double xSnap = 1d, double ySnap = 1d)
         {
             // preRender
-
-            /*
-
-            ' Is this the modal layer?
-            IF gModal = ID THEN
-                CALL gxColor(0!, 0!, 0!, 0.5!)
-                CALL gxRectf(0, 0, gxWidth - 1, gxHeight - 1)
-            END IF 
-
-            */
 
             Sprockets.Graphics.PushMatrix();
 
@@ -178,12 +176,9 @@ namespace LiquidPlayer.Liquid
 
             Sprockets.Graphics.CleanMatrixStack(objectId);
 
-            if (!objectManager.IsA(objectId, LiquidClass.Layer))
-            {
-                Sprockets.Graphics.PopMatrix();
-                Sprockets.Graphics.Translate(0f, 0f, Sprockets.Graphics.DepthBase - nextDepthBase);
-                Sprockets.Graphics.PushMatrix();
-            }
+            Sprockets.Graphics.PopMatrix();
+            Sprockets.Graphics.Translate(0d, 0d, Sprockets.Graphics.DepthBase - nextDepthBase);
+            Sprockets.Graphics.PushMatrix();
 
             var renderListClone = renderList.Clone();
 
@@ -195,16 +190,18 @@ namespace LiquidPlayer.Liquid
 
                 liquidClass = objectManager[gelId].LiquidClass;
 
-                gel.Render(liquidClass, orthoId);
+                gel.VRender(liquidClass, orthoId);
             }
+
+            // TODO! Graphics.PopLink after each PushLink (in LinkNextObject!)
                 
-            Sprockets.Graphics.CleanClipStack(objectId);
+            Sprockets.Graphics.CleanClipStack();
 
             Sprockets.Graphics.PopMatrix();
 
             Sprockets.Graphics.Ink = inkColor;
             Sprockets.Graphics.PopMatrix();
-            Sprockets.Graphics.Translate(0f, 0f, Sprockets.Graphics.DepthBase - depthBase);
+            Sprockets.Graphics.Translate(0d, 0d, Sprockets.Graphics.DepthBase - depthBase);
         }
 
         public void Show()
@@ -280,6 +277,19 @@ namespace LiquidPlayer.Liquid
         public void Rotate(double rotation)
         {
             this.rotation = rotation;
+        }
+
+        public override void Destructor()
+        {
+            Hide();
+
+            if (Sprockets.Input.MousePointingAt == objectId)
+            {
+                Sprockets.Input.MousePointingAt = 0;
+                Sprockets.Input.MousePointingAtNode = 0;
+            }
+
+            base.Destructor();
         }
 
         public override void shutdown()

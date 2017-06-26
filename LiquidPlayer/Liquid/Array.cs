@@ -34,7 +34,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -77,8 +77,8 @@ namespace LiquidPlayer.Liquid
                 default:
                     if (classId > 0)
                     {
-                        clone = objectManager.Clone;
-                        compare = objectManager.Compare;
+                        clone = objectManager.VClone;
+                        compare = objectManager.VCompare;
                         free = objectManager.Mark;
                     }
                     else
@@ -248,13 +248,13 @@ namespace LiquidPlayer.Liquid
         {
             if (!isDimensioned)
             {
-                Throw(ExceptionCode.NotDimensioned);
+                RaiseError(ErrorCode.NotDimensioned);
                 return -1;
             }
 
             if (index < 0 || index >= capacity)
             {
-                Throw(ExceptionCode.BadSubscript);
+                RaiseError(ErrorCode.BadSubscript);
                 return -1;
             }
 
@@ -286,7 +286,7 @@ namespace LiquidPlayer.Liquid
 
                     if (newCapacity == capacity)
                     {
-                        Throw(ExceptionCode.OutOfMemory);
+                        RaiseError(ErrorCode.OutOfMemory);
                         return;
                     }
                 }
@@ -296,7 +296,7 @@ namespace LiquidPlayer.Liquid
 
             if (clone != null && item != 0)
             {
-                item = clone(item);
+                item = clone(objectId, item);
             }
 
             dataSpace[count] = item;
@@ -318,7 +318,7 @@ namespace LiquidPlayer.Liquid
         {
             if (!isDimensioned)
             {
-                Throw(ExceptionCode.NotDimensioned);
+                RaiseError(ErrorCode.NotDimensioned);
                 return;
             }
 
@@ -346,7 +346,7 @@ namespace LiquidPlayer.Liquid
         {
             if (!isDimensioned)
             {
-                Throw(ExceptionCode.NotDimensioned);
+                RaiseError(ErrorCode.NotDimensioned);
                 return;
             }
 
@@ -365,13 +365,13 @@ namespace LiquidPlayer.Liquid
         {
             if (!isDimensioned)
             {
-                Throw(ExceptionCode.NotDimensioned);
+                RaiseError(ErrorCode.NotDimensioned);
                 return;
             }
 
             if (index < 0 || index >= capacity)
             {
-                Throw(ExceptionCode.BadSubscript);
+                RaiseError(ErrorCode.BadSubscript);
                 return;
             }
 
@@ -397,18 +397,18 @@ namespace LiquidPlayer.Liquid
         {
             if (isDimensioned)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 
             if (newCapacity < 0)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
             else if (newCapacity > maxElementCount)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
                 return;
             }
 
@@ -425,13 +425,13 @@ namespace LiquidPlayer.Liquid
         {
             if (!isDimensioned)
             {
-                Throw(ExceptionCode.NotDimensioned);
+                RaiseError(ErrorCode.NotDimensioned);
                 return;
             }
 
             if (index < 0 || index >= capacity)
             {
-                Throw(ExceptionCode.BadSubscript);
+                RaiseError(ErrorCode.BadSubscript);
                 return;
             }
 
@@ -452,7 +452,7 @@ namespace LiquidPlayer.Liquid
 
             if (clone != null && item != 0)
             {
-                item = clone(item);
+                item = clone(objectId, item);
             }
 
             dataSpace[index] = item;
@@ -462,7 +462,7 @@ namespace LiquidPlayer.Liquid
         {
             if (!isDimensioned)
             {
-                Throw(ExceptionCode.NotDimensioned);
+                RaiseError(ErrorCode.NotDimensioned);
                 return;
             }
 
@@ -475,18 +475,18 @@ namespace LiquidPlayer.Liquid
         {
             if (!isDimensioned)
             {
-                Throw(ExceptionCode.NotDimensioned);
+                RaiseError(ErrorCode.NotDimensioned);
                 return;
             }
 
             if (newCapacity < 0)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
             else if (newCapacity > maxElementCount)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
                 return;
             }
 
@@ -520,19 +520,19 @@ namespace LiquidPlayer.Liquid
         {
             if (!isDimensioned)
             {
-                Throw(ExceptionCode.NotDimensioned);
+                RaiseError(ErrorCode.NotDimensioned);
                 return;
             }
 
             if (first < 0 || first >= capacity || last < 0 || last >= capacity)
             {
-                Throw(ExceptionCode.BadSubscript);
+                RaiseError(ErrorCode.BadSubscript);
                 return;
             }
 
             if (first > last)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 
@@ -555,19 +555,19 @@ namespace LiquidPlayer.Liquid
         {
             if (!isDimensioned)
             {
-                Throw(ExceptionCode.NotDimensioned);
+                RaiseError(ErrorCode.NotDimensioned);
                 return;
             }
 
             if (first < 0 || first >= capacity || last < 0 || last >= capacity)
             {
-                Throw(ExceptionCode.BadSubscript);
+                RaiseError(ErrorCode.BadSubscript);
                 return;
             }
 
             if (first > last)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 
@@ -591,19 +591,19 @@ namespace LiquidPlayer.Liquid
         {
             if (!isDimensioned)
             {
-                Throw(ExceptionCode.NotDimensioned);
+                RaiseError(ErrorCode.NotDimensioned);
                 return;
             }
 
             if (first < 0 || first >= capacity || last < 0 || last >= capacity)
             {
-                Throw(ExceptionCode.BadSubscript);
+                RaiseError(ErrorCode.BadSubscript);
                 return;
             }
 
             if (first > last)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
 
@@ -616,7 +616,7 @@ namespace LiquidPlayer.Liquid
         {
             if (!isDimensioned)
             {
-                Throw(ExceptionCode.NotDimensioned);
+                RaiseError(ErrorCode.NotDimensioned);
                 return;
             }
 

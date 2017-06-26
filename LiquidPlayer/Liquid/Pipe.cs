@@ -16,7 +16,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -56,7 +56,7 @@ namespace LiquidPlayer.Liquid
         {
             base.EndOfStream();
 
-            if (IsError())
+            if (IsErrorRaised())
             {
                 return false;
             }
@@ -70,14 +70,14 @@ namespace LiquidPlayer.Liquid
 
             isBlocked = false;
 
-            return (buffer.Peek() == END_OF_STREAM) ? true : false;
+            return (buffer.Peek() == END_OF_STREAM);
         }
 
         public override int Peek()
         {
             base.Peek();
 
-            if (IsError())
+            if (IsErrorRaised())
             {
                 return 0;
             }
@@ -98,7 +98,7 @@ namespace LiquidPlayer.Liquid
         {
             base.Read();
 
-            if (IsError())
+            if (IsErrorRaised())
             {
                 return 0;
             }
@@ -128,7 +128,7 @@ namespace LiquidPlayer.Liquid
         {
             base.Read(count);
 
-            if (IsError())
+            if (IsErrorRaised())
             {
                 return "";
             }
@@ -153,7 +153,7 @@ namespace LiquidPlayer.Liquid
         {
             base.Write(data);
 
-            if (IsError())
+            if (IsErrorRaised())
             {
                 return;
             }

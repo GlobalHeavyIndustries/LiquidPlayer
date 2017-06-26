@@ -17,8 +17,8 @@ namespace LiquidPlayer.Liquid
         protected int bitmapId;
         protected Bitmap bitmap;
 
-        protected int brushId;
-        protected Brush brush;
+        protected int rasterId;
+        protected Raster raster;
 
         protected int spriteId;
         protected Sprite sprite;
@@ -142,7 +142,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -160,11 +160,11 @@ namespace LiquidPlayer.Liquid
         {
             if (width < 4 || width > 256 || height < 4 || height > 256)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
 
-            var characterSetId = objectManager.ConsoleFontId;
+            var characterSetId = objectManager.SystemCharacterSetId;
 
             this.parent = false;
             this.autoScroll = true;
@@ -201,7 +201,7 @@ namespace LiquidPlayer.Liquid
 
             if (bitmapId == 0)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
                 return;
             }
 
@@ -210,22 +210,22 @@ namespace LiquidPlayer.Liquid
 
             bitmap.Clear();
 
-            var brushId = Brush.NewBrush(bitmapId, id);
+            var rasterId = Raster.NewRaster(bitmapId, id);
 
-            if (brushId == 0)
+            if (rasterId == 0)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
                 return;
             }
 
-            this.brushId = brushId;
-            this.brush = objectManager[brushId].LiquidObject as Brush;
+            this.rasterId = rasterId;
+            this.raster = objectManager[rasterId].LiquidObject as Raster;
 
             var spriteId = Sprite.NewSprite(bitmapId, id);
 
             if (spriteId == 0)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
                 return;
             }
 
@@ -277,14 +277,14 @@ namespace LiquidPlayer.Liquid
 
             if (message.IsTo(objectId))
             {
-                if ((MessageBody)message.GetBody() == MessageBody.KeyDown)
+                if (message.GetBody() == MessageBody.KeyDown)
                 {
                     if (state != 1)
                     {
                         goto cleanExit;
                     }
 
-                    var key = message.GetData();
+                    var key = Convert.ToInt32(message.GetData());
 
                     var oldCursorX = cursorX;
                     var oldCursorY = cursorY;
@@ -473,7 +473,7 @@ namespace LiquidPlayer.Liquid
         {
             if (x < 0 || x >= width || y < 0 || y >= height)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
 
@@ -536,14 +536,14 @@ namespace LiquidPlayer.Liquid
             var rasterX = -(width * characterWidth) / 2;
             var rasterY = -(height * characterHeight) / 2;
 
-            var blink = (LiquidPlayer.Program.SystemClock % 1000 >= 500) ? true : false;
+            var blink = (LiquidPlayer.Program.SystemClock % 1000 >= 500);
 
-            var showCursor = (blink && objectManager.Focus == objectId) ? true : false;
+            var showCursor = (blink && objectManager.Focus == objectId);
 
             bitmap.SwapBuffers();
 
             Sprockets.Graphics.LinkNextObject(spriteId);
-            sprite.Render(LiquidClass.Sprite, orthoId);
+            sprite.VRender(LiquidClass.Sprite, orthoId);
             Sprockets.Graphics.LinkNextObject(objectId);
 
 //          characterSetBitmap.SwapBuffers();
@@ -586,14 +586,14 @@ namespace LiquidPlayer.Liquid
                 attributeData[index] = 0;
             }
 
-            brush.ScrollUp(0, 0, bitmap.Width - 1, bitmap.Height - 1);
+            raster.ScrollUp(0, 0, bitmap.Width - 1, bitmap.Height - 1);
         }
 
         public void Tab(int x)
         {
             if (x < 0 || x >= width)
             {
-                Throw(ExceptionCode.IllegalQuantity);
+                RaiseError(ErrorCode.IllegalQuantity);
                 return;
             }
 
@@ -623,8 +623,8 @@ namespace LiquidPlayer.Liquid
             objectManager.Mark(bitmapId);
             bitmap = null;
 
-            objectManager.Mark(brushId);
-            brush = null;
+            objectManager.Mark(rasterId);
+            raster = null;
 
             objectManager.Mark(spriteId);
             sprite = null;

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LiquidPlayer.Liquid
 {
-    public class Turtle : Brush
+    public class Turtle : Raster
     {
         protected bool penDown;
         protected double turtleX;
@@ -43,7 +43,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -61,7 +61,7 @@ namespace LiquidPlayer.Liquid
         {
             if (bitmapId == 0)
             {
-                Throw(ExceptionCode.NullObject);
+                RaiseError(ErrorCode.NullObject);
                 return;
             }
 

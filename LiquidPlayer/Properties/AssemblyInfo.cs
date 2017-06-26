@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("LiquidPlayer")]
+[assembly: AssemblyTitle("Liquid Player")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("LiquidPlayer")]
-[assembly: AssemblyCopyright("Copyright ©  2017")]
+[assembly: AssemblyCompany("Global Heavy Industries")]
+[assembly: AssemblyProduct("Liquid Player")]
+[assembly: AssemblyCopyright("Copyright © 2017 Global Heavy Industries")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("ed507235-5878-431e-8271-b597c3a9114f")]
+[assembly: Guid("5d7e9db7-731c-4a6b-888d-fdf8383ab786")]
 
 // Version information for an assembly consists of the following four values:
 //

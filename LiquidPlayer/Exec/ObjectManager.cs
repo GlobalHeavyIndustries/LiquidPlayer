@@ -53,8 +53,8 @@ namespace LiquidPlayer.Exec
     {
         private DSL.FreeList<Object> bag = new DSL.FreeList<Object>();
 
-        private int consoleFontBitmapId;
-        private int consoleFontId;
+        private int systemCharacterSetBitmapId;
+        private int systemCharacterSetId;
 
         public int Count
         {
@@ -70,27 +70,21 @@ namespace LiquidPlayer.Exec
             set;
         }
 
-        public int ConsoleFontId
+        public int SystemCharacterSetId
         {
             get
             {
-                return consoleFontId;
+                return systemCharacterSetId;
             }
-        }
-
-        public int ActiveFBOId
-        {
-            get;
-            set;
         }
 
         public void LoadDefaultResources()
         {
-            consoleFontBitmapId = Liquid.Image.NewImage(@"Data\Font.bmp");
+            systemCharacterSetBitmapId = Liquid.Image.NewImage(@"Data\Font.bmp");
 
-            var consoleFontBitmap = bag[consoleFontBitmapId].LiquidObject as Liquid.Bitmap;
+            var systemCharacterSetBitmap = bag[systemCharacterSetBitmapId].LiquidObject as Liquid.Bitmap;
 
-            var filterId = Liquid.Filter.NewFilter(consoleFontBitmapId);
+            var filterId = Liquid.Filter.NewFilter(systemCharacterSetBitmapId);
 
             var filter = bag[filterId].LiquidObject as Liquid.Filter;
 
@@ -98,37 +92,35 @@ namespace LiquidPlayer.Exec
 
             Mark(filterId);
 
-            consoleFontBitmap.SwapBuffers();
+            systemCharacterSetBitmap.SwapBuffers();
 
-            consoleFontId = Liquid.CharacterSet.NewCharacterSet(consoleFontBitmapId, 8, 16, 8, 16);
+            systemCharacterSetId = Liquid.CharacterSet.NewCharacterSet(systemCharacterSetBitmapId, 8, 16, 8, 16);
 
-            var consoleFont = bag[consoleFontId].LiquidObject as Liquid.CharacterSet;
+            var systemCharacterSet = bag[systemCharacterSetId].LiquidObject as Liquid.CharacterSet;
 
-            consoleFont.MapCharacters(32, 32, 16);
-            consoleFont.MapCharacters(48, 48, 16);
-            consoleFont.MapCharacters(64, 64, 16);
-            consoleFont.MapCharacters(80, 80, 16);
-            consoleFont.MapCharacters(96, 96, 16);
-            consoleFont.MapCharacters(112, 112, 16);
-            consoleFont.MapCharacters(128, 128, 16);
-            consoleFont.MapCharacters(144, 144, 16);
-            consoleFont.MapCharacters(160, 160, 16);
-            consoleFont.MapCharacters(176, 176, 16);
-            consoleFont.MapCharacters(192, 192, 16);
-            consoleFont.MapCharacters(208, 208, 16);
-            consoleFont.MapCharacters(224, 224, 16);
-            consoleFont.MapCharacters(240, 240, 16);
+            systemCharacterSet.MapCharacters(32, 32, 16);
+            systemCharacterSet.MapCharacters(48, 48, 16);
+            systemCharacterSet.MapCharacters(64, 64, 16);
+            systemCharacterSet.MapCharacters(80, 80, 16);
+            systemCharacterSet.MapCharacters(96, 96, 16);
+            systemCharacterSet.MapCharacters(112, 112, 16);
+            systemCharacterSet.MapCharacters(128, 128, 16);
+            systemCharacterSet.MapCharacters(144, 144, 16);
+            systemCharacterSet.MapCharacters(160, 160, 16);
+            systemCharacterSet.MapCharacters(176, 176, 16);
+            systemCharacterSet.MapCharacters(192, 192, 16);
+            systemCharacterSet.MapCharacters(208, 208, 16);
+            systemCharacterSet.MapCharacters(224, 224, 16);
+            systemCharacterSet.MapCharacters(240, 240, 16);
         }
 
         public void FreeResources()
         {
-            Mark(consoleFontBitmapId);
+            Mark(systemCharacterSetBitmapId);
+            systemCharacterSetBitmapId = 0;
 
-            consoleFontBitmapId = 0;
-
-            Mark(consoleFontId);
-
-            consoleFontId = 0;
+            Mark(systemCharacterSetId);
+            systemCharacterSetId = 0;
         }
 
         public int GetNextFree()
@@ -268,6 +260,27 @@ namespace LiquidPlayer.Exec
             return children;
         }
 
+        public List<int> GetLeftoverObjects(int taskId)
+        {
+            var leftoverObjects = new List<int>();
+
+            bag.Head();
+
+            var cursor = bag.Cursor;
+
+            while (cursor != 0)
+            {
+                if (cursor != taskId && bag[cursor].TaskId == taskId)
+                {
+                    leftoverObjects.Add(cursor);
+                }
+
+                cursor = bag.Next();
+            }
+
+            return leftoverObjects;
+        }
+
         public void Assign(ref int a0, int id)
         {
             if (a0 != id)
@@ -291,7 +304,7 @@ namespace LiquidPlayer.Exec
             return id;
         }
 
-        public int Clone(int id)
+        public int VClone(int ownerId, int id)
         {
             Debug.Assert(id != 0);
             Debug.Assert(bag[id].LiquidClass != LiquidClass.None);
@@ -314,7 +327,7 @@ namespace LiquidPlayer.Exec
             }
         }
 
-        public int Compare(int lhs, int rhs)
+        public int VCompare(int lhs, int rhs)
         {
             if (lhs == 0)
             {
@@ -361,27 +374,6 @@ namespace LiquidPlayer.Exec
             }
         }
 
-        public List<int> GetLeftoverObjects(int taskId)
-        {
-            var leftoverObjects = new List<int>();
-
-            bag.Head();
-
-            var cursor = bag.Cursor;
-
-            while (cursor != 0)
-            {
-                if (cursor != taskId && bag[cursor].TaskId == taskId)
-                {
-                    leftoverObjects.Add(cursor);
-                }
-
-                cursor = bag.Next();
-            }
-
-            return leftoverObjects;
-        }
-
         public void Mark(int id)
         {
             if (id == 0)
@@ -402,41 +394,11 @@ namespace LiquidPlayer.Exec
 
             obj.Destructor();
 
-            obj.Disable();
+            var liquidClass = bag[id].LiquidClass;
 
-            if (IsA(id, LiquidClass.Entity))
-            {
-                var entity = bag[id].LiquidObject as Liquid.Entity;
-
-                entity.Stop();
-            }
-
-            if (IsA(id, LiquidClass.GEL))
-            {
-                var gel = bag[id].LiquidObject as Liquid.GEL;
-
-                gel.Hide();
-            }
-
-            if (IsA(id, LiquidClass.GEL3D))
-            {
-                var gel3D = bag[id].LiquidObject as Liquid.GEL3D;
-
-                gel3D.Hide();
-            }
+            obj.VShutdown(liquidClass);
 
             Program.Exec.Sweeper.Add(id);
-
-            var taskId = bag[id].TaskId;
-
-            if (taskId != 0)
-            {
-                var task = bag[taskId].LiquidObject as Liquid.Task;
-
-                task.CleanMessageQueue(id);                 
-            }
-
-            Program.Exec.Router.CleanRouterQueue(id);
         }
 
         public void Free(int id)
@@ -448,63 +410,9 @@ namespace LiquidPlayer.Exec
 
             Debug.Assert(bag[id].LiquidClass != LiquidClass.None);
 
-            var obj = bag[id].LiquidObject as Liquid.Object;
-
-            var liquidClass = bag[id].LiquidClass;
-
-            obj.Shutdown(liquidClass);
-
             if (bag[id].ParentId != 0)
             {
                 UnHook(id);
-            }
-
-            if (Sprockets.Input.MousePointingAt == id)
-            {
-                Sprockets.Input.MousePointingAt = 0;
-                Sprockets.Input.MousePointingAtNode = 0;
-            }
-
-            if (Focus == id)
-            {
-                Focus = 0;
-            }
-
-            bag[id].LiquidObject.Dispose();
-
-            bag[id].LiquidClass = LiquidClass.None;
-
-            bag[id].DataSpace = null;
-
-            bag[id].LiquidObject = null;
-
-            bag.Free(id);
-        }
-
-        public void Kill(int id)
-        {
-            if (id == 0)
-            {
-                return;
-            }
-
-            Debug.Assert(bag[id].LiquidClass != LiquidClass.None);
-
-            var obj = bag[id].LiquidObject as Liquid.Object;
-
-            obj.Destructor();
-
-            Program.Exec.Router.CleanRouterQueue(id);
-
-            if (Sprockets.Input.MousePointingAt == id)
-            {
-                Sprockets.Input.MousePointingAt = 0;
-                Sprockets.Input.MousePointingAtNode = 0;
-            }
-
-            if (Focus == id)
-            {
-                Focus = 0;
             }
 
             bag[id].LiquidObject.Dispose();

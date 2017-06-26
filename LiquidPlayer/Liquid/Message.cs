@@ -10,16 +10,16 @@ namespace LiquidPlayer.Liquid
     {
         protected int from;
         protected int to;
-        protected int body;
-        protected int data;
+        protected MessageBody body;
+        protected string data;
 
-        public static int NewMessage(int from, int to, int body, int data, int parentId = 0)
+        public static int NewMessage(int from, int to, MessageBody body, string data, int parentId = 0)
         {
             var id = LiquidPlayer.Program.Exec.ObjectManager.New(LiquidClass.Message);
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -32,7 +32,7 @@ namespace LiquidPlayer.Liquid
             return id;
         }
 
-        public Message(int id, int from, int to, int body, int data)
+        public Message(int id, int from, int to, MessageBody body, string data)
             : base(id)
         {
             this.from = from;
@@ -43,12 +43,12 @@ namespace LiquidPlayer.Liquid
 
         public override string ToString()
         {
-            return $"Message {body} From {from} To {to}: Data {data}";
+            return $"Message {body} From {from} To {to}: Data \"{data}\"";
         }
 
         public bool IsFrom(int from)
         {
-            return (this.from == from) ? true : false;
+            return (this.from == from);
         }
 
         public int GetFrom()
@@ -58,7 +58,7 @@ namespace LiquidPlayer.Liquid
 
         public bool IsTo(int to)
         {
-            return (this.to == to) ? true : false;
+            return (this.to == to);
         }
 
         public int GetTo()
@@ -66,12 +66,12 @@ namespace LiquidPlayer.Liquid
             return to;
         }
 
-        public int GetBody()
+        public MessageBody GetBody()
         {
             return body;
         }
 
-        public int GetData()
+        public string GetData()
         {
             return data;
         }
@@ -84,11 +84,11 @@ namespace LiquidPlayer.Liquid
             {
                 var obj = objectManager[id].LiquidObject as Object;
 
-                if (obj.Enabled)
+                if (obj.IsEnabled)
                 {
                     var liquidClass = objectManager[id].LiquidClass;
 
-                    var results = obj.Callback(liquidClass, objectId);
+                    var results = obj.VCallback(liquidClass, objectId);
 
                     if (results || obj.IsA(LiquidClass.Task))
                     {

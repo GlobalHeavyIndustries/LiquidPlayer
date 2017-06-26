@@ -17,7 +17,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -35,7 +35,7 @@ namespace LiquidPlayer.Liquid
         {
             if (streamId == 0)
             {
-                Throw(ExceptionCode.NullObject);
+                RaiseError(ErrorCode.NullObject);
                 return;
             }
 
@@ -44,13 +44,13 @@ namespace LiquidPlayer.Liquid
 
             if (!stream.IsOpen)
             {
-                Throw(ExceptionCode.StreamNotOpen);
+                RaiseError(ErrorCode.StreamNotOpen);
                 return;
             }
 
             if (!stream.CanWrite)
             {
-                Throw(ExceptionCode.Denied);
+                RaiseError(ErrorCode.Denied);
                 return;
             }
         }
@@ -62,12 +62,12 @@ namespace LiquidPlayer.Liquid
 
         public void WriteLine()
         {
-            stream.Write("" + (char)13 + (char)10);
+            stream.Write(Environment.NewLine);
         }
 
         public void WriteLine(string data)
         {
-            stream.Write(data + (char)13 + (char)10);
+            stream.Write(data + Environment.NewLine);
         }
 
         public override void shutdown()

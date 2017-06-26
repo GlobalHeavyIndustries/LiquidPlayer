@@ -126,6 +126,10 @@ namespace LiquidPlayer.Exec
                 {
                     queue.Add(transaction);
                 }
+                else
+                {
+                    Program.Exec.ObjectManager.Mark(transaction.MessageId);
+                }
             }
 
             transactionPrioritytQueue = queue;
@@ -181,35 +185,35 @@ namespace LiquidPlayer.Exec
             }
         }
 
-        public void Send(int from, int to, int body, int data)
+        public void Send(int from, int to, MessageBody body, string data, int parentId = 0)
         {
             Debug.Assert(to != 0);
             Debug.Assert(Program.Exec.ObjectManager[to].LiquidClass != LiquidClass.None);
 
-            var messageId = Liquid.Message.NewMessage(from, to, body, data);
+            var messageId = Liquid.Message.NewMessage(from, to, body, data, parentId);
 
             SendToTask(messageId);
         }
 
-        public void Delay(int from, int to, int body, int data, int delay)
+        public void Delay(int from, int to, MessageBody body, string data, int delay, int parentId = 0)
         {
             Debug.Assert(to != 0);
             Debug.Assert(Program.Exec.ObjectManager[to].LiquidClass != LiquidClass.None);
             Debug.Assert(delay >= 100 && delay <= 86400000);
 
-            var messageId = Liquid.Message.NewMessage(from, to, body, data);
+            var messageId = Liquid.Message.NewMessage(from, to, body, data, parentId);
 
             add(messageId, delay);
         }
 
-        public void Pulse(int from, int to, int body, int data, int pulse, int iterations)
+        public void Pulse(int from, int to, MessageBody body, string data, int pulse, int iterations, int parentId = 0)
         {
             Debug.Assert(to != 0);
             Debug.Assert(Program.Exec.ObjectManager[to].LiquidClass != LiquidClass.None);
             Debug.Assert(pulse >= 100 && pulse <= 86400000);
             Debug.Assert(iterations == -1 || iterations >= 1);
 
-            var messageId = Liquid.Message.NewMessage(from, to, body, data);
+            var messageId = Liquid.Message.NewMessage(from, to, body, data, parentId);
 
             add(messageId, pulse, iterations);
         }

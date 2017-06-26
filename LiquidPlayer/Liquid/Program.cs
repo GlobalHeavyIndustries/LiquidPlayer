@@ -58,13 +58,13 @@ namespace LiquidPlayer.Liquid
             }
         }
 
-        public static int NewProgram(string fileName, string arguments, int parentId = 0)
+        public static int NewProgram(string path, string arguments, int parentId = 0)
         {
             var id = LiquidPlayer.Program.Exec.ObjectManager.New(LiquidClass.Program);
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -72,13 +72,13 @@ namespace LiquidPlayer.Liquid
                 LiquidPlayer.Program.Exec.ObjectManager.Hook(id, parentId);
             }
 
-            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new Program(id, fileName, arguments);
+            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new Program(id, path, arguments);
 
             return id;
         }
 
-        protected Program(int id, string fileName, string arguments)
-            : base(id, fileName, arguments)
+        protected Program(int id, string path, string arguments)
+            : base(id, path, arguments)
         {
             this.timers = new int[256];
             this.inputBuffer = new Queue<int>();
@@ -104,7 +104,7 @@ namespace LiquidPlayer.Liquid
 
         public override string ToString()
         {
-            return $"Program (Tag: \"{tag}\")";
+            return $"Program (Tag: \"{tag}\"), Path: \"{path}\")";
         }
 
         private void GameWindow_Resize(object sender, EventArgs e)
@@ -140,15 +140,17 @@ namespace LiquidPlayer.Liquid
 
             if (message.IsTo(objectId))
             {
-                switch ((MessageBody)message.GetBody())
+                var data = Convert.ToInt32(message.GetData());
+
+                switch (message.GetBody())
                 {
                     case MessageBody.KeyDown:
                         inputBuffer.Enqueue((int)EventCode.KeyDown);
-                        inputBuffer.Enqueue(message.GetData());
+                        inputBuffer.Enqueue(data);
                         return true;
                     case MessageBody.Timer:
                         inputBuffer.Enqueue((int)EventCode.Timer);
-                        inputBuffer.Enqueue(message.GetData());
+                        inputBuffer.Enqueue(data);
                         return true;
                 }
             }
@@ -176,7 +178,7 @@ namespace LiquidPlayer.Liquid
 
                 var liquidClass = objectManager[entityId].LiquidClass;
 
-                entity.Update(liquidClass);
+                entity.VUpdate(liquidClass);
             }
         }
 
@@ -286,7 +288,7 @@ namespace LiquidPlayer.Liquid
 
                 var liquidClass = objectManager[gelId].LiquidClass;
 
-                gel.Render(liquidClass, 0, xBorder, yBorder, xSnap, ySnap);
+                gel.VRender(liquidClass, 0, xBorder, yBorder, xSnap, ySnap);
             }
         }
 
@@ -315,21 +317,34 @@ namespace LiquidPlayer.Liquid
             var width = LiquidPlayer.Program.GameWindow.Width;
             var height = LiquidPlayer.Program.GameWindow.Height;
 
-            var consoleFont = objectManager[objectManager.ConsoleFontId].LiquidObject as CharacterSet;
+            var consoleFont = objectManager[objectManager.SystemCharacterSetId].LiquidObject as CharacterSet;
 
             var displayList = consoleFont.DisplayList;
 
+
             Sprockets.Graphics.SetColor(0, 85, 216, 192);
-            Sprockets.Graphics.RectangleFill(width - 95, 5, width - 5, 115);
+            Sprockets.Graphics.RectangleFill(5, 5, 95, 115);
 
             Sprockets.Graphics.SetColor(0, 0, 0, 255);
-            Sprockets.Graphics.Rectangle(width - 95, 5, width - 5, 115);
+            Sprockets.Graphics.Rectangle(5, 5, 95, 115);
 
-            Sprockets.Graphics.PrintShadow(displayList, width - 85, 15, "X=" + Sprockets.Input.MouseSnappedXPosition);
-            Sprockets.Graphics.PrintShadow(displayList, width - 85, 35, "Y=" + Sprockets.Input.MouseSnappedYPosition);
-            Sprockets.Graphics.PrintShadow(displayList, width - 85, 55, "O=" + Sprockets.Input.MousePointingAt);
-            Sprockets.Graphics.PrintShadow(displayList, width - 85, 75, "N=" + Sprockets.Input.MousePointingAtNode);
-            Sprockets.Graphics.PrintShadow(displayList, width - 85, 95, "#=" + LiquidPlayer.Program.Exec.ObjectManager.Count);
+            Sprockets.Graphics.PrintLists(displayList, 10, 10, "X=" + Sprockets.Input.MouseSnappedXPosition, 0xFFFFFFFF, 0xFF000000);
+            Sprockets.Graphics.PrintLists(displayList, 10, 30, "Y=" + Sprockets.Input.MouseSnappedYPosition, 0xFFFFFFFF, 0xFF000000);
+            Sprockets.Graphics.PrintLists(displayList, 10, 50, "O=" + Sprockets.Input.MousePointingAt, 0xFFFFFFFF, 0xFF000000);
+            Sprockets.Graphics.PrintLists(displayList, 10, 70, "N=" + Sprockets.Input.MousePointingAtNode, 0xFFFFFFFF, 0xFF000000);
+            Sprockets.Graphics.PrintLists(displayList, 10, 90, "#=" + LiquidPlayer.Program.Exec.ObjectManager.Count, 0xFFFFFFFF, 0xFF000000);
+
+
+            Sprockets.Graphics.SetColor(0, 85, 216, 192);
+            Sprockets.Graphics.RectangleFill(width - 165, 5, width - 5, 210);
+
+            Sprockets.Graphics.SetColor(0, 0, 0, 255);
+            Sprockets.Graphics.Rectangle(width - 165, 5, width - 5, 210);
+
+            for (var index = 0; index < 10; index++)
+            {
+                Sprockets.Graphics.PrintLists(displayList, width - 155, 10 + index * 20, index.ToString() + "=" + LiquidPlayer.Program.Exec.Watch[index].ToString(), 0xFFFFFFFF, 0xFF000000);
+            }
         }
 
         public override void Show(int id)
@@ -339,14 +354,31 @@ namespace LiquidPlayer.Liquid
                 return;
             }
 
-            if (objectManager.IsA(id, LiquidClass.View) ||
-                objectManager.IsA(id, LiquidClass.Sprite) ||
-                objectManager.IsA(id, LiquidClass.Text))
+            //if (objectManager.IsA(id, LiquidClass.View) ||
+            //    objectManager.IsA(id, LiquidClass.Sprite) ||
+            //    objectManager.IsA(id, LiquidClass.Text))
+            //{
+            //    renderList.Add(id);
+
+            //    Sprockets.Graphics.Sorted = false;
+            //}
+
+            System.Diagnostics.Debug.Assert(objectManager.IsA(id, LiquidClass.GEL));
+
+            var parentId = objectManager[id].ParentId;
+
+            if (parentId == objectId)
             {
                 renderList.Add(id);
-
-                Sprockets.Graphics.Sorted = false;
             }
+            else
+            {
+                var gel = objectManager[parentId].LiquidObject as GEL;
+
+                gel.RenderList.Add(id);
+            }
+
+            Sprockets.Graphics.Sorted = false;
         }
 
         public override void Hide(int id)
@@ -356,11 +388,26 @@ namespace LiquidPlayer.Liquid
                 return;
             }
 
-            if (objectManager.IsA(id, LiquidClass.View) ||
-                objectManager.IsA(id, LiquidClass.Sprite) ||
-                objectManager.IsA(id, LiquidClass.Text))
+            //if (objectManager.IsA(id, LiquidClass.View) ||
+            //    objectManager.IsA(id, LiquidClass.Sprite) ||
+            //    objectManager.IsA(id, LiquidClass.Text))
+            //{
+            //    renderList.Remove(id);
+            //}
+
+            System.Diagnostics.Debug.Assert(objectManager.IsA(id, LiquidClass.GEL));
+
+            var parentId = objectManager[id].ParentId;
+
+            if (parentId == objectId)
             {
                 renderList.Remove(id);
+            }
+            else
+            {
+                var gel = objectManager[parentId].LiquidObject as GEL;
+
+                gel.RenderList.Remove(id);
             }
         }
 

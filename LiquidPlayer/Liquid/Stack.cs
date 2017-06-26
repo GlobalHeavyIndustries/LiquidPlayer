@@ -27,7 +27,7 @@ namespace LiquidPlayer.Liquid
         {
             get
             {
-                return (count == 0) ? true : false;
+                return (count == 0);
             }
         }
 
@@ -37,7 +37,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -76,8 +76,8 @@ namespace LiquidPlayer.Liquid
                 default:
                     if (classId > 0)
                     {
-                        clone = objectManager.Clone;
-                        compare = objectManager.Compare;
+                        clone = objectManager.VClone;
+                        compare = objectManager.VCompare;
                         free = objectManager.Mark;
                     }
                     else
@@ -148,7 +148,7 @@ namespace LiquidPlayer.Liquid
 
             if (clone != null && item != 0)
             {
-                item = clone(item);
+                item = clone(objectId, item);
             }
 
             return item;
@@ -173,7 +173,7 @@ namespace LiquidPlayer.Liquid
 
             if (clone != null && item != 0)
             {
-                item = clone(item);
+                item = clone(objectId, item);
             }
 
             dataSpace[count++] = item;

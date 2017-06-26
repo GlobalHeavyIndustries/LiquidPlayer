@@ -28,8 +28,6 @@ namespace LiquidPlayer.Liquid
 
         protected List<int> renderList;
         protected List<int> render3DList;
-        protected List<int> z;
-        protected List<int> layers;
 
         //protected int taskBar;
         //protected int menuBar;
@@ -51,13 +49,13 @@ namespace LiquidPlayer.Liquid
             }
         }
 
-        public static int NewApp(string fileName, string arguments, int parentId = 0)
+        public static int NewApp(string path, string arguments, int parentId = 0)
         {
             var id = LiquidPlayer.Program.Exec.ObjectManager.New(LiquidClass.App);
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -65,19 +63,19 @@ namespace LiquidPlayer.Liquid
                 LiquidPlayer.Program.Exec.ObjectManager.Hook(id, parentId);
             }
 
-            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new App(id, fileName, arguments);
+            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new App(id, path, arguments);
 
             return id;
         }
 
-        protected App(int id, string fileName, string arguments)
-            : base(id, fileName, arguments)
+        protected App(int id, string path, string arguments)
+            : base(id, path, arguments)
         {
             var orthoId = Ortho.NewOrtho(id);
 
             if (orthoId == 0)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
                 return;
             }
 
@@ -88,7 +86,7 @@ namespace LiquidPlayer.Liquid
 
             if (perspectiveId == 0)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
                 return;
             }
 
@@ -109,8 +107,6 @@ namespace LiquidPlayer.Liquid
 
             this.renderList = new List<int>();
             this.render3DList = new List<int>();
-            this.z = new List<int>();
-            this.layers = new List<int>();
 
             //this.taskBar = 0;
             //this.menuBar = 0;
@@ -127,7 +123,7 @@ namespace LiquidPlayer.Liquid
 
         public override string ToString()
         {
-            return $"App (Tag: \"{tag}\")";
+            return $"App (Tag: \"{tag}\"), Path: \"{path}\")";
         }
 
         private void GameWindow_Resize(object sender, EventArgs e)
@@ -239,7 +235,7 @@ namespace LiquidPlayer.Liquid
 
                 var liquidClass = objectManager[gelId].LiquidClass;
 
-                gel.Render(liquidClass, orthoId, xBorder, yBorder, xSnap, ySnap);
+                gel.VRender(liquidClass, orthoId, xBorder, yBorder, xSnap, ySnap);
             }
         }
 
@@ -267,7 +263,7 @@ namespace LiquidPlayer.Liquid
 
                 var liquidClass = objectManager[gel3DId].LiquidClass;
 
-                gel3D.Render(liquidClass, perspectiveId);
+                gel3D.VRender(liquidClass, perspectiveId);
             }
 
             // no fog
@@ -302,21 +298,34 @@ namespace LiquidPlayer.Liquid
             var width = LiquidPlayer.Program.GameWindow.Width;
             var height = LiquidPlayer.Program.GameWindow.Height;
 
-            var consoleFont = objectManager[objectManager.ConsoleFontId].LiquidObject as CharacterSet;
+            var consoleFont = objectManager[objectManager.SystemCharacterSetId].LiquidObject as CharacterSet;
 
             var displayList = consoleFont.DisplayList;
 
+
             Sprockets.Graphics.SetColor(0, 85, 216, 192);
-            Sprockets.Graphics.RectangleFill(width - 95, 5, width - 5, 115);
+            Sprockets.Graphics.RectangleFill(5, 5, 95, 115);
 
             Sprockets.Graphics.SetColor(0, 0, 0, 255);
-            Sprockets.Graphics.Rectangle(width - 95, 5, width - 5, 115);
+            Sprockets.Graphics.Rectangle(5, 5, 95, 115);
 
-            Sprockets.Graphics.PrintShadow(displayList, width - 85, 15, "X=" + Sprockets.Input.MouseSnappedXPosition);
-            Sprockets.Graphics.PrintShadow(displayList, width - 85, 35, "Y=" + Sprockets.Input.MouseSnappedYPosition);
-            Sprockets.Graphics.PrintShadow(displayList, width - 85, 55, "O=" + Sprockets.Input.MousePointingAt);
-            Sprockets.Graphics.PrintShadow(displayList, width - 85, 75, "N=" + Sprockets.Input.MousePointingAtNode);
-            Sprockets.Graphics.PrintShadow(displayList, width - 85, 95, "#=" + LiquidPlayer.Program.Exec.ObjectManager.Count);
+            Sprockets.Graphics.PrintLists(displayList, 10, 10, "X=" + Sprockets.Input.MouseSnappedXPosition, 0xFFFFFFFF, 0xFF000000);
+            Sprockets.Graphics.PrintLists(displayList, 10, 30, "Y=" + Sprockets.Input.MouseSnappedYPosition, 0xFFFFFFFF, 0xFF000000);
+            Sprockets.Graphics.PrintLists(displayList, 10, 50, "O=" + Sprockets.Input.MousePointingAt, 0xFFFFFFFF, 0xFF000000);
+            Sprockets.Graphics.PrintLists(displayList, 10, 70, "N=" + Sprockets.Input.MousePointingAtNode, 0xFFFFFFFF, 0xFF000000);
+            Sprockets.Graphics.PrintLists(displayList, 10, 90, "#=" + LiquidPlayer.Program.Exec.ObjectManager.Count, 0xFFFFFFFF, 0xFF000000);
+
+
+            Sprockets.Graphics.SetColor(0, 85, 216, 192);
+            Sprockets.Graphics.RectangleFill(width - 165, 5, width - 5, 210);
+
+            Sprockets.Graphics.SetColor(0, 0, 0, 255);
+            Sprockets.Graphics.Rectangle(width - 165, 5, width - 5, 210);
+
+            for (var index = 0; index < 10; index++)
+            {
+                Sprockets.Graphics.PrintLists(displayList, width - 155, 10 + index * 20, index.ToString() + "=" + LiquidPlayer.Program.Exec.Watch[index].ToString(), 0xFFFFFFFF, 0xFF000000);
+            }
         }
 
         public override void Show(int id)
@@ -326,11 +335,7 @@ namespace LiquidPlayer.Liquid
                 return;
             }
 
-            if (objectManager.IsA(id, LiquidClass.Layer))
-            {
-                z.Add(id);
-            }
-            else if (objectManager.IsA(id, LiquidClass.GEL))
+            if (objectManager.IsA(id, LiquidClass.GEL))
             {
                 var parentId = objectManager[id].ParentId;
 
@@ -359,7 +364,7 @@ namespace LiquidPlayer.Liquid
                 {
                     var gel3D = objectManager[parentId].LiquidObject as GEL3D;
 
-                    gel3D.RenderList.Add(id);
+                    gel3D.Render3DList.Add(id);
                 }
 
                 Sprockets.Graphics.Sorted3D = false;
@@ -373,11 +378,7 @@ namespace LiquidPlayer.Liquid
                 return;
             }
 
-            if (objectManager.IsA(id, LiquidClass.Layer))
-            {
-                z.Remove(id);
-            }
-            else if (objectManager.IsA(id, LiquidClass.GEL))
+            if (objectManager.IsA(id, LiquidClass.GEL))
             {
                 var parentId = objectManager[id].ParentId;
 
@@ -398,13 +399,13 @@ namespace LiquidPlayer.Liquid
 
                 if (parentId == objectId)
                 {
-                    renderList.Remove(id);
+                    render3DList.Remove(id);
                 }
                 else
                 {
                     var gel3D = objectManager[parentId].LiquidObject as GEL3D;
 
-                    gel3D.RenderList.Remove(id);
+                    gel3D.Render3DList.Remove(id);
                 }
             }
         }
@@ -446,7 +447,7 @@ namespace LiquidPlayer.Liquid
 
                 var liquidClass = objectManager[entityId].LiquidClass;
 
-                entity.Update(liquidClass);
+                entity.VUpdate(liquidClass);
             }
 
 
@@ -504,6 +505,16 @@ namespace LiquidPlayer.Liquid
             LiquidPlayer.Program.SwapBuffers();
         }
 
+        public int DequeueMessage()
+        {
+            return (messageQueue.Count != 0) ? messageQueue.Dequeue() : 0;
+        }
+
+        public bool IsMessageQueueEmpty()
+        {
+            return messageQueue.Count == 0;
+        }
+
         public void Screen(int width, int height)
         {
             LiquidPlayer.Program.ScreenWidth = width;
@@ -530,8 +541,6 @@ namespace LiquidPlayer.Liquid
             updateList = null;
             renderList = null;
             render3DList = null;
-            z = null;
-            layers = null;
 
             base.shutdown();
         }

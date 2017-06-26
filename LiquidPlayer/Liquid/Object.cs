@@ -53,7 +53,7 @@ namespace LiquidPlayer.Liquid
             }
         }
 
-        public bool Enabled
+        public bool IsEnabled
         {
             get
             {
@@ -109,7 +109,7 @@ namespace LiquidPlayer.Liquid
             return false;
         }
 
-        public bool Callback(LiquidClass liquidClass, int messageId)
+        public bool VCallback(LiquidClass liquidClass, int messageId)
         {
             var address = LiquidPlayer.Program.ClassManager[liquidClass].Callback;
 
@@ -125,7 +125,7 @@ namespace LiquidPlayer.Liquid
 
                 stack = null;
 
-                return (a0 == 1) ? true : false;
+                return (a0 == 1);
             }
             else
             {
@@ -171,12 +171,12 @@ namespace LiquidPlayer.Liquid
             return LiquidPlayer.Program.Exec.LongManager.New(id, data);
         }
 
-        public static long GetLong(int id, int index)
+        public static long GetLong(int index)
         {
-            return LiquidPlayer.Program.Exec.LongManager[index];
+            return (index != 0) ? LiquidPlayer.Program.Exec.LongManager[index] : 0L;
         }
 
-        public static void FreeLong(int id, int index)
+        public static void FreeLong(int index)
         {
             LiquidPlayer.Program.Exec.LongManager.Free(index);
         }
@@ -186,12 +186,12 @@ namespace LiquidPlayer.Liquid
             return LiquidPlayer.Program.Exec.DoubleManager.New(id, data);
         }
 
-        public static double GetDouble(int id, int index)
+        public static double GetDouble(int index)
         {
-            return LiquidPlayer.Program.Exec.DoubleManager[index];
+            return (index != 0) ? LiquidPlayer.Program.Exec.DoubleManager[index] : 0d;
         }
 
-        public static void FreeDouble(int id, int index)
+        public static void FreeDouble(int index)
         {
             LiquidPlayer.Program.Exec.DoubleManager.Free(index);
         }
@@ -201,33 +201,77 @@ namespace LiquidPlayer.Liquid
             return LiquidPlayer.Program.Exec.StringManager.New(id, data);
         }
 
-        public static string GetString(int id, int index)
+        public static string GetString(int index)
         {
-            return LiquidPlayer.Program.Exec.StringManager[index];
+            return (index != 0) ? LiquidPlayer.Program.Exec.StringManager[index] : "";
         }
 
-        public static void FreeString(int id, int index)
+        public static void FreeString(int index)
         {
             LiquidPlayer.Program.Exec.StringManager.Free(index);
         }
 
-        public bool IsError()
+        public ErrorCode GetErrorCode()
         {
             var task = objectManager.GetTask(objectId);
 
-            return (task.ThrowCode != ExceptionCode.None) ? true : false;
+            return task.ErrorCode;
         }
 
-        public void Throw(ExceptionCode code, string data = "")
+        public bool IsErrorRaised()
         {
             var task = objectManager.GetTask(objectId);
 
-            task.Raise(code, data);
+            return (task.ErrorCode != ErrorCode.None);
+        }
+
+        public void RaiseError(ErrorCode errorCode, string errorData = "")
+        {
+            var task = objectManager.GetTask(objectId);
+
+            if (task == null)
+            {
+                var parentId = objectManager[objectId].ParentId;
+
+                task = objectManager.GetTask(parentId);
+            }
+
+            task.RaiseError(errorCode, errorData, objectId);
+        }
+
+        public static void RaiseError(int id, ErrorCode errorCode, string errorData = "")
+        {
+            var task = LiquidPlayer.Program.Exec.ObjectManager.GetTask(id);
+
+            if (task == null)
+            {
+                var parentId = LiquidPlayer.Program.Exec.ObjectManager[id].ParentId;
+
+                task = LiquidPlayer.Program.Exec.ObjectManager.GetTask(parentId);
+            }
+
+            task.RaiseError(errorCode, errorData, id);
         }
 
         public virtual void Destructor()
         {
+            if (objectManager.Focus == objectId)
+            {
+                objectManager.Focus = 0;
+            }
 
+            Disable();
+
+            var taskId = objectManager[objectId].TaskId;
+
+            if (taskId != 0)
+            {
+                var task = objectManager[taskId].LiquidObject as Task;
+
+                task.CleanMessageQueue(objectId);
+            }
+
+            LiquidPlayer.Program.Exec.Router.CleanRouterQueue(objectId);
         }
 
         public virtual void shutdown()
@@ -235,7 +279,7 @@ namespace LiquidPlayer.Liquid
             dataSpace = null;
         }
 
-        public void Shutdown(LiquidClass liquidClass)
+        public void VShutdown(LiquidClass liquidClass)
         {
             var address = LiquidPlayer.Program.ClassManager[liquidClass].Shutdown;
 
@@ -248,17 +292,18 @@ namespace LiquidPlayer.Liquid
                 shutdown();
             }
 
+
             List<int> list;
 
-            list = LiquidPlayer.Program.Exec.GetLeftoverLongs(objectId);
+            list = LiquidPlayer.Program.Exec.LongManager.GetLeftover(objectId);
 
             System.Diagnostics.Debug.Assert(list.Count == 0);
 
-            list = LiquidPlayer.Program.Exec.GetLeftoverDoubles(objectId);
+            list = LiquidPlayer.Program.Exec.DoubleManager.GetLeftover(objectId);
 
             System.Diagnostics.Debug.Assert(list.Count == 0);
 
-            list = LiquidPlayer.Program.Exec.GetLeftoverStrings(objectId);
+            list = LiquidPlayer.Program.Exec.StringManager.GetLeftover(objectId);
 
             System.Diagnostics.Debug.Assert(list.Count == 0);
         }

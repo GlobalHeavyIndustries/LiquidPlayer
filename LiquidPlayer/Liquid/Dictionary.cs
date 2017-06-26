@@ -40,7 +40,7 @@ namespace LiquidPlayer.Liquid
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -84,8 +84,8 @@ namespace LiquidPlayer.Liquid
                 default:
                     if (classId > 0)
                     {
-                        clone = objectManager.Clone;
-                        compare = objectManager.Compare;
+                        clone = objectManager.VClone;
+                        compare = objectManager.VCompare;
                         free = objectManager.Mark;
                     }
                     else
@@ -123,12 +123,12 @@ namespace LiquidPlayer.Liquid
                 {
                     if (newCapacity < 0)
                     {
-                        Throw(ExceptionCode.IllegalQuantity);
+                        RaiseError(ErrorCode.IllegalQuantity);
                         return;
                     }
                     else if (newCapacity > maxElementCount)
                     {
-                        Throw(ExceptionCode.OutOfMemory);
+                        RaiseError(ErrorCode.OutOfMemory);
                         return;
                     }
 
@@ -174,7 +174,7 @@ namespace LiquidPlayer.Liquid
 
                             free(item);
 
-                            hashSlots[item].InUse = false;
+                            hashSlots[index].InUse = false;
                         }
                     }
 
@@ -323,7 +323,7 @@ namespace LiquidPlayer.Liquid
 
             if (index == -1)
             {
-                Throw(ExceptionCode.BadSubscript);
+                RaiseError(ErrorCode.BadSubscript);
                 return -1;
             }
 
@@ -355,7 +355,7 @@ namespace LiquidPlayer.Liquid
 
             if (search(key, out index) == -1)
             {
-                Throw(ExceptionCode.KeyNotFound);
+                RaiseError(ErrorCode.KeyNotFound);
                 return;
             }
 
@@ -408,7 +408,7 @@ namespace LiquidPlayer.Liquid
         {
             int index;
 
-            return (search(key, out index) != -1) ? true : false;
+            return (search(key, out index) != -1);
         }
 
         public int GetCount()
@@ -422,19 +422,19 @@ namespace LiquidPlayer.Liquid
 
             if (search(key, out index) != -1)
             {
-                Throw(ExceptionCode.DuplicateKey);
+                RaiseError(ErrorCode.DuplicateKey);
                 return;
             }
 
             if (index == -1)
             {
-                Throw(ExceptionCode.OutOfMemory);
+                RaiseError(ErrorCode.OutOfMemory);
                 return;
             }
 
             if (clone != null && value != 0)
             {
-                value = clone(value);
+                value = clone(objectId, value);
             }
 
             var hashSlot = new HashSlot

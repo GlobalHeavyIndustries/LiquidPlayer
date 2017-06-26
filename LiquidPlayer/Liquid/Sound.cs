@@ -10,7 +10,7 @@ namespace LiquidPlayer.Liquid
 {
     public class Sound : Audio
     {
-        protected string filename;
+        protected string path;
 
         protected SoundPlayer soundPlayer;
 
@@ -42,13 +42,13 @@ namespace LiquidPlayer.Liquid
         }
         #endregion
 
-        public static int NewSound(string filename, int parentId = 0)
+        public static int NewSound(string path, int parentId = 0)
         {
             var id = LiquidPlayer.Program.Exec.ObjectManager.New(LiquidClass.Sound);
 
             if (id == 0)
             {
-                throw new System.Exception("Out of memory");
+                throw new Exception("Out of memory");
             }
 
             if (parentId != 0)
@@ -56,24 +56,24 @@ namespace LiquidPlayer.Liquid
                 LiquidPlayer.Program.Exec.ObjectManager.Hook(id, parentId);
             }
 
-            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new Sound(id, filename);
+            LiquidPlayer.Program.Exec.ObjectManager[id].LiquidObject = new Sound(id, path);
 
             return id;
         }
 
-        public Sound(int id, string filename)
+        public Sound(int id, string path)
             : base(id)
         {
             // check file exists, throw exception if not (see Image)
 
-            this.filename = filename;
+            this.path = path;
 
-            this.soundPlayer = new SoundPlayer(filename);
+            this.soundPlayer = new SoundPlayer(path);
         }
 
         public override string ToString()
         {
-            return $"Sound (Filename: \"{filename}\")";
+            return $"Sound (Path: \"{path}\")";
         }
 
         public void Play()

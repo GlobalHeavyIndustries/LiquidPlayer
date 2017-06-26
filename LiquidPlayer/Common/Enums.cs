@@ -4,8 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using System.Runtime.InteropServices;
-
 namespace LiquidPlayer
 {
     // Enums.cs
@@ -13,38 +11,6 @@ namespace LiquidPlayer
     // 2016-12-20
 
     // --------------------------------------------------------------------------------------------------------------------------------------------------------
-
-    [StructLayout(LayoutKind.Explicit)]
-    public struct SmartPointer
-    {
-        [FieldOffset(0)]
-        public long Address;
-
-        [FieldOffset(0)]
-        public int LoAddress;
-        [FieldOffset(4)]
-        public int HiAddress;
-    }
-
-    [StructLayout(LayoutKind.Explicit)]
-    public struct LiquidType
-    {
-        [FieldOffset(0)]
-        public LiquidClass Class;
-        [FieldOffset(4)]
-        public LiquidClass Subclass;
-
-        [FieldOffset(0)]
-        public long Combo;
-
-        public LiquidType(LiquidClass liquidClass, LiquidClass liquidSubclass = LiquidClass.None)
-        {
-            this.Combo = 0L;
-
-            this.Class = liquidClass;
-            this.Subclass = liquidSubclass;
-        }
-    }
 
     public delegate bool FunctionDelegate(LiquidClass liquidClass, int id, int[] stack, int sp, ref int a0, ref SmartPointer bx, ref long c0, ref double d0);
 
@@ -64,8 +30,9 @@ namespace LiquidPlayer
         None,
 
         Object,
+        System,
+        Debugger,
         Message,
-        Exception,
         Collection,
         Array,
         Matrix,
@@ -75,7 +42,6 @@ namespace LiquidPlayer
         List,
 //      Tree,
         CommandLine,
-//      Memory,                 // Databank?
         FileSystem,
         File,
         Internet,
@@ -105,25 +71,21 @@ namespace LiquidPlayer
         Bitmap,
         Image,
         Texture,
-        Banner,
+        Raster,
         Brush,
         Pen,
         Turtle,
         Filter,
-        Font,
         CharacterSet,
-        MonoSpacedFont,
-//      WindowsFont,
+        Font,
         View,
         Console,
         TileMap,
         CopperBars,
         Canvas,
-        FBO,
-        FBO3D,
         Sprite,
+        Tiles,
         Text,
-        Layer,
         Audio,
         Sound,
         Music,
@@ -147,16 +109,11 @@ namespace LiquidPlayer
     public enum pCode
     {
         Halt,
-        Info,
         IRQ,
-        BufferA0,
-        BufferD0Float,
-        Unbuffer,
         Alloc,
         DecrSP,
         PackBX,
         UnpackBX,
-        Unused,
         PointGlobal,
         PointMacro,
         PointBP,
@@ -165,11 +122,9 @@ namespace LiquidPlayer
         PointBX,
         BFree,
         BFreeA1,
-        Iterator,
         This,
         Task,
         New,
-        Hook,
         Copy,
         Adopt,
         Assign,
@@ -192,7 +147,6 @@ namespace LiquidPlayer
         PopA1,
         MoveA0D0,
         MoveA1D1,
-        NotUsed,
         NegA0,
         NegA1,
         NotA0,
@@ -202,7 +156,7 @@ namespace LiquidPlayer
         DecA0,
         DecA1,
         Abs,
-        Sgn,
+        Sign,
         Add,
         Sub,
         Mod,
@@ -250,14 +204,14 @@ namespace LiquidPlayer
         DDecD1,
         DInt,
         DAbs,
-        DSgn,
+        DSign,
         DVal,
         DFrac,
-        DCeil,
-        DFix,
+        DCeiling,
+        DFloor,
         DRound,
         DTan,
-        DAtn,
+        DAtan,
         DCos,
         DSin,
         DExp,
@@ -266,7 +220,8 @@ namespace LiquidPlayer
         DLog,
         DLog2,
         DLog10,
-        DSqr,
+        DSq,
+        DSqrt,
         DAdd,
         DSub,
         DMod,
@@ -286,7 +241,7 @@ namespace LiquidPlayer
         WJoin,
         WStrA0,
         WStrD0Float,
-        WHook,
+        WAdopt,
         WAssign,
         WFree,
         WFreeA1,
@@ -297,14 +252,12 @@ namespace LiquidPlayer
         Jump,
         JumpFalse,
         JumpTrue,
-        JumpIteratorEnd,
         Gosub,
         Return,
-        Native,
+        Stub,
         Call,
         VTable,
-        NativeClass,
-        WaitClass,
+        StubClass,
         CallClass,
         VTableClass,
         API,
@@ -314,7 +267,6 @@ namespace LiquidPlayer
         ByteA1,
         Short,
         ShortA1,
-        BufferC0,
         MoveA0C0,
         MoveA1C1,
         MoveC0A0,
@@ -326,8 +278,6 @@ namespace LiquidPlayer
         MoveC0C1,
         MoveC1C0,
         WStrC0,
-        QPack,
-        QUnpack,
         QConstC0,
         QConstC1,
         QLoadC0,
@@ -347,7 +297,7 @@ namespace LiquidPlayer
         QDecC0,
         QDecC1,
         QAbs,
-        QSgn,
+        QSign,
         QAdd,
         QSub,
         QMod,
@@ -367,6 +317,7 @@ namespace LiquidPlayer
         QAnd,
         QOr,
         QXor,
+        QAdopt,
         QAssign,
         QFree,
         QFreeA1,
@@ -374,10 +325,7 @@ namespace LiquidPlayer
         QByte,
         QShort,
         QInt,
-        BufferD0,
         WStrD0,
-        DPack,
-        DUnpack,
         DConstD0,
         DConstD1,
         DLoadD0,
@@ -388,6 +336,7 @@ namespace LiquidPlayer
         DPushD1,
         DPopD0,
         DPopD1,
+        DAdopt,
         DAssign,
         DFree,
         DFreeA1,
